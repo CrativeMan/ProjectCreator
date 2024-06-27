@@ -49,10 +49,6 @@ func main() {
 		path += "/"
 	}
 
-	// direnv
-	_writeFiles(path, ENVRC)
-	_allowDirenv(err)
-
 	switch language {
 	case C:
 		// Run createCEnv
@@ -74,7 +70,11 @@ func main() {
 		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
 	}
 
-	fmt.Printf("Path: %s\n", path)
+
+	_writeFiles(path, ENVRC)
+	_allowDirenv(err)
+
+	fmt.Println(sty.success.Render("Successfully created project"))
 }
 
 func promptUserWithChoices() *huh.Form {
@@ -103,7 +103,11 @@ func createGoEnv(path string) error {
 	// ask for module name
 	moduleName := askUserForGoModuleName()
 	// create go mod file
-	err := os.Chdir(path)
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.Chdir(path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,6 +118,8 @@ func createGoEnv(path string) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	os.Chdir(dir)
+	fmt.Println(sty.success.Render("Created go mod file"))
 	return nil
 }
 
@@ -150,6 +156,9 @@ func _writeFiles(path string, langType int) {
 	case GO:
 		goMainName := "main.go"
 		flake, err := os.Create(path + flakeName)
+		if err != nil {
+			log.Fatal(err)
+		}
 		mainGo, err := os.Create(path + goMainName)
 		if err != nil {
 			log.Fatal(err)
@@ -158,16 +167,23 @@ func _writeFiles(path string, langType int) {
 		defer mainGo.Close()
 
 		_, err = flake.WriteString(GOFLAKECONTENT)
+		if err != nil {
+			log.Fatal(err)
+		}
 		_, err = mainGo.WriteString(GOMAINCONTENTS)
 		if err != nil {
 			log.Fatal(err)
 		}
 		err = flake.Sync()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(sty.success.Render("Created flake.nix file"))
 		err = mainGo.Sync()
 		if err != nil {
 			log.Fatal(err)
 		}
-		break
+		fmt.Println(sty.success.Render("Created main.go file"))
 	case JAVA:
 		break
 	case ENVRC:
@@ -185,6 +201,7 @@ func _writeFiles(path string, langType int) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		fmt.Println(sty.success.Render("Created .envrc file"))
 	}
 }
 
