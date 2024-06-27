@@ -22,7 +22,6 @@ var (
 	path     string
 	sty      styles
 	Hostname string
-	err      error
 )
 
 type styles struct {
@@ -42,34 +41,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// check if path ends with a / and if not add it
-	pathRunes := []rune(path)
-	lastPathRune := pathRunes[len(pathRunes)-1]
-	if lastPathRune != '/' {
-		path += "/"
-	}
+	fmt.Printf("Creating project at: %s\n", path)
+	path = _makeGlobalPath(path)
 
 	switch language {
-	case C:
-		// Run createCEnv
-		fmt.Println(sty.success.Render("C"))
-	case CPP:
-		// Run createCppEnv
-		fmt.Println(sty.success.Render("C++"))
-	case GO:
-		_writeFiles(path, GO)
-		err := createGoEnv(path)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create go env:"))
-			log.Fatal(err)
-		}
-	case JAVA:
-		// Run createJavaEnv
-		fmt.Println(sty.success.Render("Java"))
-	default:
-		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+		case C:
+			_writeFiles(path, C)
+		case CPP:
+			// Run createCppEnv
+			fmt.Println(sty.success.Render("C++"))
+		case GO:
+			_writeFiles(path, GO)
+			err := createGoEnv(path)
+			if err != nil {
+				fmt.Println(sty.fail.Render("Failed to create go env:"))
+				log.Fatal(err)
+			}
+		case JAVA:
+			// Run createJavaEnv
+			fmt.Println(sty.success.Render("Java"))
+		default:
+			log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
 	}
-
 
 	_writeFiles(path, ENVRC)
 	_allowDirenv(err)
@@ -78,21 +71,23 @@ func main() {
 }
 
 func promptUserWithChoices() *huh.Form {
+	WIP := sty.warning.Render(" (WIP)")
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[int]().
 				Title("Choose programming language: ").
 				Options(
-					huh.NewOption("C", C),
-					huh.NewOption("C++", CPP),
+					huh.NewOption("C" + WIP, C),
+					huh.NewOption("C++" + WIP, CPP),
 					huh.NewOption("Go", GO),
-					huh.NewOption("Java", JAVA),
+					huh.NewOption("Java" + WIP, JAVA),
 				).
 				Value(&language),
 
 			huh.NewInput().
-				Title("Enter path to project (if left empty this path)").
-				Prompt("Path:").
+				Title("Enter path to project").
+				Prompt("Path: ").
+				Placeholder("If left empty it's this path.").
 				Validate(_isValidPath).
 				Value(&path),
 		).WithTheme(huh.ThemeDracula()),
@@ -105,10 +100,12 @@ func createGoEnv(path string) error {
 	// create go mod file
 	dir, err := os.Getwd()
 	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to get current working directory:"))
 		log.Fatal(err)
 	}
 	err = os.Chdir(path)
 	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to change working directory:"))
 		log.Fatal(err)
 	}
 	cmd := exec.Command("go", "mod", "init", moduleName)
@@ -116,6 +113,7 @@ func createGoEnv(path string) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to create go mod file"))
 		log.Fatal(err)
 	}
 	os.Chdir(dir)
@@ -136,6 +134,7 @@ func askUserForGoModuleName() string {
 	)
 	err := form.Run()
 	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to run ask user for go module name:"))
 		log.Fatal(err)
 	}
 
@@ -148,57 +147,106 @@ func askUserForGoModuleName() string {
 
 func _writeFiles(path string, langType int) {
 	flakeName := "flake.nix"
+	
 	switch langType {
 	case C:
-		break
+		cMainName := "main.c"
+		flake, err := os.Create(path + flakeName)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
+			log.Fatal(err)
+		}
+		defer flake.Close()
+		mainC, err := os.Create(path + cMainName)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create main.c file:"))
+			log.Fatal(err)
+		}
+		defer mainC.Close()
+
+		_, err = flake.WriteString(CFLAKECONTENT)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write c flake:"))
+			log.Fatal(err)
+		}
+		_, err = mainC.WriteString(CMAINCONTENTS)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write c main:"))
+			log.Fatal(err)
+		}
+		err = mainC.Sync()
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync c main:"))
+			log.Fatal(err)
+		}
+		fmt.Println(sty.success.Render("Created main.c file"))
+
+		// close flake file buffer
+		err = flake.Sync()
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync go flake:"))
+			log.Fatal(err)
+		}
+		fmt.Println(sty.success.Render("Created flake.nix file"))
 	case CPP:
 		break
 	case GO:
 		goMainName := "main.go"
 		flake, err := os.Create(path + flakeName)
 		if err != nil {
-			log.Fatal(err)
-		}
-		mainGo, err := os.Create(path + goMainName)
-		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
 			log.Fatal(err)
 		}
 		defer flake.Close()
+		mainGo, err := os.Create(path + goMainName)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create main.go file:"))
+			log.Fatal(err)
+		}
 		defer mainGo.Close()
 
 		_, err = flake.WriteString(GOFLAKECONTENT)
 		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write go flake:"))
 			log.Fatal(err)
 		}
 		_, err = mainGo.WriteString(GOMAINCONTENTS)
 		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write go main:"))
 			log.Fatal(err)
 		}
-		err = flake.Sync()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(sty.success.Render("Created flake.nix file"))
 		err = mainGo.Sync()
 		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync go main:"))
 			log.Fatal(err)
 		}
 		fmt.Println(sty.success.Render("Created main.go file"))
+
+		// close flake file buffer
+		err = flake.Sync()
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync go flake:"))
+			log.Fatal(err)
+		}
+		fmt.Println(sty.success.Render("Created flake.nix file"))
 	case JAVA:
 		break
 	case ENVRC:
 		filename := ".envrc"
 		file, err := os.Create(path + filename)
 		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create .envrc:"))
 			log.Fatal(err)
 		}
 		defer file.Close()
 		_, err = file.WriteString(ENVRCCONTENT)
 		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write .envrc:"))
 			log.Fatal(err)
 		}
 		err = file.Sync()
 		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync .envrc:"))
 			log.Fatal(err)
 		}
 		fmt.Println(sty.success.Render("Created .envrc file"))
@@ -225,9 +273,12 @@ func _allowDirenv(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("Allowed direnv for %s\n", path)
 }
 
 func _isValidPath(path string) error {
+	path = _makeGlobalPath(path)
+
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			err2 := _createFolder(path)
@@ -244,47 +295,23 @@ func _createFolder(path string) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(sty.success.Render("Created folder"))
 	return nil
 }
 
-const (
-	GOFLAKECONTENT string = `{
-  description = "Basic Go development environment";
-
-  inputs = {
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
-    flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  };
-
-  outputs = {
-    self,
-    flake-utils,
-    nixpkgs,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          go
-        ];
-      };
-    });
-}`
-	GOMAINCONTENTS string = `package main
-
-import (
-	"fmt"
-)
-
-func main() {
-	fmt.Println("Hello, World!")
-}`
-	ENVRCCONTENT string = "use flake"
-)
+func _makeGlobalPath(path string) string{
+	// check if path ends with a / and if not add it
+	pathRunes := []rune(path)
+	if pathRunes[len(pathRunes)-1] != '/' {
+		path += "/"
+	}
+	if pathRunes[0] == '~' {
+		dir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to get user home dir:"))
+			log.Fatal(err)
+		}
+		path = dir + path[1:]
+	}
+	return path
+}
