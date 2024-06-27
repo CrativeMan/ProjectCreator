@@ -118,7 +118,7 @@ func createGoEnv(path string) error {
 }
 
 func askUserForGoModuleName() string {
-	moduleName := "main"
+	var moduleName string
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
@@ -131,6 +131,10 @@ func askUserForGoModuleName() string {
 	err := form.Run()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if moduleName == "" {
+		moduleName = "main"
 	}
 
 	return moduleName
