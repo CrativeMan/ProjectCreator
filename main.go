@@ -45,23 +45,23 @@ func main() {
 	path = _makeGlobalPath(path)
 
 	switch language {
-		case C:
-			_writeFiles(path, C)
-		case CPP:
-			// Run createCppEnv
-			fmt.Println(sty.success.Render("C++"))
-		case GO:
-			_writeFiles(path, GO)
-			err := createGoEnv(path)
-			if err != nil {
-				fmt.Println(sty.fail.Render("Failed to create go env:"))
-				log.Fatal(err)
-			}
-		case JAVA:
-			// Run createJavaEnv
-			fmt.Println(sty.success.Render("Java"))
-		default:
-			log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+	case C:
+		_writeFiles(path, C)
+	case CPP:
+		// Run createCppEnv
+		fmt.Println(sty.success.Render("C++"))
+	case GO:
+		_writeFiles(path, GO)
+		err := createGoEnv(path)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create go env:"))
+			log.Fatal(err)
+		}
+	case JAVA:
+		// Run createJavaEnv
+		fmt.Println(sty.success.Render("Java"))
+	default:
+		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
 	}
 
 	_writeFiles(path, ENVRC)
@@ -77,10 +77,10 @@ func promptUserWithChoices() *huh.Form {
 			huh.NewSelect[int]().
 				Title("Choose programming language: ").
 				Options(
-					huh.NewOption("C" + WIP, C),
-					huh.NewOption("C++" + WIP, CPP),
+					huh.NewOption("C", C),
+					huh.NewOption("C++"+WIP, CPP),
 					huh.NewOption("Go", GO),
-					huh.NewOption("Java" + WIP, JAVA),
+					huh.NewOption("Java"+WIP, JAVA),
 				).
 				Value(&language),
 
@@ -147,7 +147,7 @@ func askUserForGoModuleName() string {
 
 func _writeFiles(path string, langType int) {
 	flakeName := "flake.nix"
-	
+
 	switch langType {
 	case C:
 		cMainName := "main.c"
@@ -299,7 +299,7 @@ func _createFolder(path string) error {
 	return nil
 }
 
-func _makeGlobalPath(path string) string{
+func _makeGlobalPath(path string) string {
 	// check if path ends with a / and if not add it
 	pathRunes := []rune(path)
 	if pathRunes[len(pathRunes)-1] != '/' {
