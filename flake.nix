@@ -16,14 +16,13 @@
     nixpkgs,
     ...
   }:
-  let
-    pkgs = import nixpkgs{system = "x86_64-linux";};
-  in {
-    
-    devShell = pkgs.mkShell {
-      buildInputs = with pkgs; [
-        go
-      ];
-    };
-  };
+    flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      devShell = pkgs.mkShell {
+        buildInputs = with pkgs; [
+          go
+        ];
+      };
+    });
 }

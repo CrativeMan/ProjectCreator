@@ -1,25 +1,31 @@
 let
   pkgs = import <nixpkgs> { };
+  go = pkgs.go_1_21;
 in
 
 with pkgs;
 
-stdenv.mkDerivation {
+buildGoModule rec {
   pname = "createp";
   version = "0.1.0";
 
   src = ./.;
 
-  buildInputs = [ go ];
+  vendorSha256 = "sha256-i2FG/Dlw0r5PVHak+37VBeRwG7Vf7qWNlYzNyJUIURg=";
+
+  subPackages = [ "." ];
 
   buildPhase  = ''
-    export GOPATH=$(mktemp -d)
-    export GOCACHE=$GOPATH/cache
+    runHook preBuild  
     go build -o createp
+    runHook postBuild
   '';
 
   installPhase = ''
+    runHook preInstall
     mkdir -p $out/bin
     cp createp $out/bin
+    runHook postInstall
+    nix-env -i ./result
   '';
 }
