@@ -7,7 +7,7 @@ with pkgs;
 
 buildGoModule rec {
   pname = "createp";
-  version = "0.1.0";
+  version = "0.1.1";
 
   src = ./.;
 
@@ -26,6 +26,5 @@ buildGoModule rec {
     mkdir -p $out/bin
     cp createp $out/bin
     runHook postInstall
-    nix-env -i ./result
-  '';
+    '';
 }

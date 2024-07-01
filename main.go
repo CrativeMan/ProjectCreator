@@ -22,6 +22,7 @@ var (
 	path     string
 	sty      styles
 	Hostname string
+	GoModuleName string
 )
 
 type styles struct {
@@ -51,7 +52,6 @@ func main() {
 		// Run createCppEnv
 		fmt.Println(sty.success.Render("C++"))
 	case GO:
-		_writeFiles(path, GO)
 		err := createGoEnv(path)
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to create go env:"))
@@ -96,28 +96,8 @@ func promptUserWithChoices() *huh.Form {
 
 func createGoEnv(path string) error {
 	// ask for module name
-	moduleName := askUserForGoModuleName()
-	// create go mod file
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to get current working directory:"))
-		log.Fatal(err)
-	}
-	err = os.Chdir(path)
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to change working directory:"))
-		log.Fatal(err)
-	}
-	cmd := exec.Command("go", "mod", "init", moduleName)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to create go mod file"))
-		log.Fatal(err)
-	}
-	os.Chdir(dir)
-	fmt.Println(sty.success.Render("Created go mod file"))
+	GoModuleName = askUserForGoModuleName()
+	_writeFiles(path, GO)
 	return nil
 }
 
@@ -192,6 +172,7 @@ func _writeFiles(path string, langType int) {
 		break
 	case GO:
 		goMainName := "main.go"
+		goModName := "go.mod"
 		flake, err := os.Create(path + flakeName)
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
@@ -204,6 +185,12 @@ func _writeFiles(path string, langType int) {
 			log.Fatal(err)
 		}
 		defer mainGo.Close()
+		goMod, err := os.Create(path + goModName)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create go.mod file:"))
+			log.Fatal(err)
+		}
+		defer goMod.Close()
 
 		_, err = flake.WriteString(GOFLAKECONTENT)
 		if err != nil {
@@ -215,12 +202,23 @@ func _writeFiles(path string, langType int) {
 			fmt.Println(sty.fail.Render("Failed to write go main:"))
 			log.Fatal(err)
 		}
+		_, err = goMod.WriteString("module " + GoModuleName + GOMODCONTENTS)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write go mod:"))
+			log.Fatal(err)
+		}
 		err = mainGo.Sync()
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to sync go main:"))
 			log.Fatal(err)
 		}
 		fmt.Println(sty.success.Render("Created main.go file"))
+		err = goMod.Sync()
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync go mod:"))
+			log.Fatal(err)
+		}
+		fmt.Println(sty.success.Render("Created go mod file"))
 
 		// close flake file buffer
 		err = flake.Sync()
