@@ -70,7 +70,7 @@ int main() {
 
   GOMODCONTENTS string = `
 
-go 1.21.10`
+go 1.21`
 
 	GOMAINCONTENTS string = `package main
 

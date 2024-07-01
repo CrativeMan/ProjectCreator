@@ -1,13 +1,12 @@
 let
   pkgs = import <nixpkgs> { };
-  go = pkgs.go_1_21;
 in
 
 with pkgs;
 
 buildGoModule rec {
   pname = "createp";
-  version = "0.1.2";
+  version = "0.1.3";
 
   src = ./.;
 

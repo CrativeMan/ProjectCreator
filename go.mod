@@ -1,6 +1,6 @@
 module project-creator
 
-go 1.21.10
+go 1.21
 
 require (
 	github.com/charmbracelet/huh v0.4.2
