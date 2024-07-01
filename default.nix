@@ -1,22 +1,25 @@
 let
-  pkgs = import <nixpkgs> {};
-in 
+  pkgs = import <nixpkgs> { };
+in
 
 with pkgs;
 
 stdenv.mkDerivation {
-  buildInputs = [ go ];
   pname = "createp";
   version = "0.1.0";
 
   src = ./.;
 
-  buildPhase = ''
-    go build -o main
+  buildInputs = [ go ];
+
+  buildPhase  = ''
+    export GOPATH=$(mktemp -d)
+    export GOCACHE=$GOPATH/cache
+    go build -o createp
   '';
 
   installPhase = ''
-    mkdir -p $out/bin/createp
-    cp main $out/bin/createp
+    mkdir -p $out/bin
+    cp createp $out/bin
   '';
 }

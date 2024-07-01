@@ -16,20 +16,14 @@
     nixpkgs,
     ...
   }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-
-      createp = pkgs.buildGoModule rec {
-        pname = "createp";
-        version = "0.1.0";
-        src = ./.;
-      };
-
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          go
-        ];
-      };
-    });
+  let
+    pkgs = import nixpkgs{system = "x86_64-linux";};
+  in {
+    
+    devShell = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        go
+      ];
+    };
+  };
 }
