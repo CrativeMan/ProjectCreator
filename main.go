@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/charmbracelet/huh"
-	lip "github.com/charmbracelet/lipgloss"
 	"log"
 	"os"
 	"os/exec"
+
+	"github.com/charmbracelet/huh"
+	lip "github.com/charmbracelet/lipgloss"
 )
 
 const (
@@ -172,7 +173,6 @@ func _writeFiles(path string, langType int) {
 		break
 	case GO:
 		goMainName := "main.go"
-		goModName := "go.mod"
 		flake, err := os.Create(path + flakeName)
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
@@ -185,12 +185,6 @@ func _writeFiles(path string, langType int) {
 			log.Fatal(err)
 		}
 		defer mainGo.Close()
-		goMod, err := os.Create(path + goModName)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create go.mod file:"))
-			log.Fatal(err)
-		}
-		defer goMod.Close()
 
 		_, err = flake.WriteString(GOFLAKECONTENT)
 		if err != nil {
@@ -202,23 +196,34 @@ func _writeFiles(path string, langType int) {
 			fmt.Println(sty.fail.Render("Failed to write go main:"))
 			log.Fatal(err)
 		}
-		_, err = goMod.WriteString("module " + GoModuleName + GOMODCONTENTS)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write go mod:"))
-			log.Fatal(err)
-		}
 		err = mainGo.Sync()
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to sync go main:"))
 			log.Fatal(err)
 		}
-		fmt.Println(sty.success.Render("Created main.go file"))
-		err = goMod.Sync()
+		fmt.Println(sty.success.Render("Created go mod file"))
+
+		// create go.mod file
+		dir, err := os.Getwd()
 		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync go mod:"))
 			log.Fatal(err)
 		}
-		fmt.Println(sty.success.Render("Created go mod file"))
+		err = os.Chdir(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		cmd := exec.Command("go", "mod", "init", GoModuleName)
+		cmd.Stdout = os.Stdout
+		cmd.Stdin = os.Stdin
+		err = cmd.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = os.Chdir(dir)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(sty.success.Render("Created go.mod file"))
 
 		// close flake file buffer
 		err = flake.Sync()
