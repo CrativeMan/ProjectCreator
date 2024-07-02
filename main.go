@@ -37,7 +37,7 @@ func main() {
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
-	fmt.Println("Version 0.1.5")
+	fmt.Println("Version 0.1.6")
 
 	initialForm := promptUserWithChoices()
 	err := initialForm.Run()
@@ -47,6 +47,9 @@ func main() {
 
 	fmt.Printf("Creating project at: %s\n", path)
 	path = _makeGlobalPath(path)
+
+	_writeFiles(path, ENVRC)
+	_allowDirenv(err)
 
 	switch language {
 	case C:
@@ -66,9 +69,6 @@ func main() {
 	default:
 		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
 	}
-
-	_writeFiles(path, ENVRC)
-	_allowDirenv(err)
 
 	fmt.Println(sty.success.Render("Successfully created project"))
 }
@@ -101,6 +101,7 @@ func createGoEnv(path string) error {
 	// ask for module name
 	GoModuleName = askUserForGoModuleName()
 	_writeFiles(path, GO)
+	createGoModule(path)
 	return nil
 }
 
@@ -203,29 +204,6 @@ func _writeFiles(path string, langType int) {
 			fmt.Println(sty.fail.Render("Failed to sync go main:"))
 			log.Fatal(err)
 		}
-		fmt.Println(sty.success.Render("Created go mod file"))
-
-		// create go.mod file
-		dir, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = os.Chdir(path)
-		if err != nil {
-			log.Fatal(err)
-		}
-		cmd := exec.Command("go", "mod", "init", GoModuleName)
-		cmd.Stdout = os.Stdout
-		cmd.Stdin = os.Stdin
-		err = cmd.Run()
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = os.Chdir(dir)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(sty.success.Render("Created go.mod file"))
 
 		// close flake file buffer
 		err = flake.Sync()
@@ -258,6 +236,30 @@ func _writeFiles(path string, langType int) {
 	}
 }
 
+func createGoModule(path string) {
+	// create go.mod file
+	goModName := "go.mod"
+	goMod, err := os.Create(path + goModName)
+	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to create go.mod file:"))
+		log.Fatal(err)
+	}
+	defer goMod.Close()
+
+	_, err = goMod.WriteString(fmt.Sprintf("module %s\n\ngo 1.22.2", GoModuleName))
+	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to write go.mod:"))
+		log.Fatal(err)
+	}
+	err = goMod.Sync()
+	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to sync go.mod:"))
+		log.Fatal(err)
+	}
+
+	fmt.Println(sty.success.Render("Created go.mod file"))
+}
+
 func _allowDirenv(err error) {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -278,7 +280,7 @@ func _allowDirenv(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Allowed direnv for %s\n", path)
+	fmt.Printf(sty.success.Render("Allowed direnv for %s\n"), path)
 }
 
 func _isValidPath(path string) error {
