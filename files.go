@@ -2,34 +2,36 @@ package main
 
 const (
 	CFLAKECONTENT string = `{
-  description = "Basic C development environment";
+description = "A very basic flake";
 
-  inputs = {
-    flake-compat = {
-      url = "github:edolstra/flake-compat";
-      flake = false;
-    };
-    flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  };
+inputs = {
+  nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+  flake-utils.url = "github:numtide/flake-utils";
+};
 
-  outputs = {
-    self,
-    flake-utils,
-    nixpkgs,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
-    in {
-      devShell = pkgs.mkShell {
-        buildInputs = with pkgs; [
-					clang
-					gcc
-					llvmPackages.clangUseLLVM
-        ];
+outputs = {
+  self,
+  nixpkgs,
+  flake-utils,
+}:
+  flake-utils.lib.eachDefaultSystem (
+    system: let
+      pkgs = import nixpkgs {
+        inherit system;
       };
-    });
+    in
+      with pkgs; {
+        formatter = pkgs.alejandra;
+        devShell = mkShell.override {stdenv = clangStdenv;} {
+          packages = [
+            # glibc
+            clang-tools
+            llvmPackages.clangUseLLVM
+            gcc
+          ];
+        };
+      }
+  );
 }` 
 
 	CMAINCONTENTS string = `#include <stdio.h>

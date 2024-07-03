@@ -37,7 +37,7 @@ func main() {
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
-	fmt.Println("Version 0.1.6")
+	fmt.Println("Version 0.1.7")
 
 	initialForm := promptUserWithChoices()
 	err := initialForm.Run()
@@ -280,7 +280,7 @@ func _allowDirenv(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf(sty.success.Render("Allowed direnv for %s\n"), path)
+	fmt.Println(sty.success.Render("Allowed direnv for " + path))
 }
 
 func _isValidPath(path string) error {
