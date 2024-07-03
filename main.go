@@ -19,10 +19,10 @@ const (
 )
 
 var (
-	language int
-	path     string
-	sty      styles
-	Hostname string
+	language     int
+	path         string
+	sty          styles
+	Hostname     string
 	GoModuleName string
 )
 

@@ -22,6 +22,10 @@
       devShell = pkgs.mkShell {
         buildInputs = with pkgs; [
           go
+          gofumpt
+          goimports-reviser
+          golines
+          delve
         ];
       };
     });
