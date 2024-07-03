@@ -32,7 +32,7 @@ outputs = {
         };
       }
   );
-}` 
+}`
 
 	CMAINCONTENTS string = `#include <stdio.h>
 	
@@ -65,6 +65,10 @@ outputs = {
     devShell = pkgs.mkShell {
       buildInputs = with pkgs; [
         go
+        gofumpt
+        goimports-reviser
+        golines
+        delve
       ];
     };
   });
@@ -82,3 +86,4 @@ func main() {
 
 	ENVRCCONTENT string = "use flake"
 )
+

@@ -37,7 +37,7 @@ func main() {
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
-	fmt.Println("Version 0.1.7")
+	fmt.Println("Version 0.1.8")
 
 	initialForm := promptUserWithChoices()
 	err := initialForm.Run()
