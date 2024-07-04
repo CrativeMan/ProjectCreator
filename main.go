@@ -37,7 +37,7 @@ func main() {
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
-	fmt.Println("Version 0.1.8")
+	fmt.Println("Version 0.1.9")
 
 	initialForm := promptUserWithChoices()
 	err := initialForm.Run()
@@ -101,6 +101,7 @@ func createGoEnv(path string) error {
 	// ask for module name
 	GoModuleName = askUserForGoModuleName()
 	_writeFiles(path, GO)
+	_chmodFile(path, "run")
 	createGoModule(path)
 	return nil
 }
@@ -176,6 +177,7 @@ func _writeFiles(path string, langType int) {
 		break
 	case GO:
 		goMainName := "main.go"
+		goRunFile := "run"
 		flake, err := os.Create(path + flakeName)
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
@@ -187,7 +189,13 @@ func _writeFiles(path string, langType int) {
 			fmt.Println(sty.fail.Render("Failed to create main.go file:"))
 			log.Fatal(err)
 		}
+		goRun, err := os.Create(path + goRunFile)
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to create run file:"))
+			log.Fatal(err)
+		}
 		defer mainGo.Close()
+		defer goRun.Close()
 
 		_, err = flake.WriteString(GOFLAKECONTENT)
 		if err != nil {
@@ -199,10 +207,19 @@ func _writeFiles(path string, langType int) {
 			fmt.Println(sty.fail.Render("Failed to write go main:"))
 			log.Fatal(err)
 		}
+		_, err = goRun.WriteString("go build -o main -v\n./main")
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to write run file:"))
+			log.Fatal(err)
+		}
 		err = mainGo.Sync()
 		if err != nil {
 			fmt.Println(sty.fail.Render("Failed to sync go main:"))
 			log.Fatal(err)
+		}
+		err = goRun.Sync()
+		if err != nil {
+			fmt.Println(sty.fail.Render("Failed to sync run file:"))
 		}
 
 		// close flake file buffer
@@ -321,4 +338,23 @@ func _makeGlobalPath(path string) string {
 		path = dir + path[1:]
 	}
 	return path
+}
+
+func _chmodFile(path string, filename string) {
+	fileInfo, err := os.Stat(path + filename)
+	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to get fileinfo from ", filename))
+		log.Fatal(err)
+	}
+
+	mode := fileInfo.Mode()
+	execMode := mode | 0100
+
+	err = os.Chmod(path+filename, execMode)
+	if err != nil {
+		fmt.Println(sty.fail.Render("Failed to make " + filename + " executable"))
+		log.Fatal(err)
+	}
+
+	fmt.Println(sty.success.Render("Made " + filename + " executable"))
 }
