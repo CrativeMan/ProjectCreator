@@ -53,7 +53,7 @@ func main() {
 
 	switch language {
 	case C:
-		_writeFiles(path, C)
+		createCEnv(path)
 	case CPP:
 		// Run createCppEnv
 		fmt.Println(sty.success.Render("C++"))
@@ -97,6 +97,11 @@ func promptUserWithChoices() *huh.Form {
 	)
 }
 
+func createCEnv(path string) {
+	askUserForProjectType(C)
+	_writeFiles(path, C)
+}
+
 func createGoEnv(path string) error {
 	// ask for module name
 	GoModuleName = askUserForGoModuleName()
@@ -104,6 +109,10 @@ func createGoEnv(path string) error {
 	_chmodFile(path, "run")
 	createGoModule(path)
 	return nil
+}
+
+func askUserForProjectType(language int) int{
+	
 }
 
 func askUserForGoModuleName() string {
