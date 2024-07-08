@@ -89,7 +89,6 @@ func promptUserWithChoices() *huh.Form {
 
 func createCEnv(path string) {
 	projType := cProjectType()
-	writeMain(path, C)
 	writeRunFile(path, C)
 
 	_chmodFile(path, "run")
@@ -97,14 +96,30 @@ func createCEnv(path string) {
 
 	switch projType {
 	case NORM:
+		dependencies := []string{
+			"clang-tools",
+			"llvmPackages.clangUseLLVM",
+			"gcc",
+		}
 		writeEnvrc(path)
 		_allowDirenv(path)
 
-		writeFlake(path, C)
+		writeFlake(path, C, dependencies)
+		writeMain(path, C)
 	case RAYLIB:
+		dependencies := []string{
+			"clang-tools",
+			"llvmPackages.clangUseLLVM",
+			"gcc",
+			"raylib",
+		}
 		writeEnvrc(path)
 		_allowDirenv(path)
+
+		writeFlake(path, C, dependencies)
+		writeMain(path, C)
 	case SUB:
+		writeMain(path, C)
 	}
 }
 
@@ -118,11 +133,44 @@ func createGoEnv(path string) {
 
 	switch projType {
 	case NORM:
-		writeFlake(path, GO)
+		dependencies := []string{
+			"go",
+			"gofumpt",
+			"goimports-reviser",
+			"golines",
+			"delve",
+		}
+		writeEnvrc(path)
+		_allowDirenv(path)
+		writeFlake(path, GO, dependencies)
 		writeGoMod(path)
+		writeMain(path, GO)
 	case RAYLIB:
+		dependencies := []string{
+			"go",
+			"gofumpt",
+			"goimports-reviser",
+			"golines",
+			"delve",
+			"wayland",
+			"wayland-protocols",
+			"glew",
+			"glfw",
+			"libxkbcommon",
+			"xorg.libX11",
+			"xorg.libXcursor",
+			"xorg.libXi",
+			"xorg.libXrandr",
+			"xorg.libXineram",
+		}
+		writeEnvrc(path)
+		_allowDirenv(path)
+		writeFlake(path, GO, dependencies)
+		writeGoMod(path)
+		writeMain(path, GO)
 	case SUB:
 		writeGoMod(path)
+		writeMain(path, GO)
 	}
 }
 

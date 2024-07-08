@@ -23,16 +23,7 @@ outputs = {
       with pkgs; {
         formatter = pkgs.alejandra;
         devShell = mkShell.override {stdenv = clangStdenv;} {
-          packages = [
-            # glibc
-            clang-tools
-            llvmPackages.clangUseLLVM
-            gcc
-          ];
-        };
-      }
-  );
-}`
+          packages = [ `
 
 	CMAINCONTENTS string = `#include <stdio.h>
 	
@@ -63,16 +54,7 @@ outputs = {
     pkgs = nixpkgs.legacyPackages.${system};
   in {
     devShell = pkgs.mkShell {
-      buildInputs = with pkgs; [
-        go
-        gofumpt
-        goimports-reviser
-        golines
-        delve
-      ];
-    };
-  });
-}`
+      buildInputs = with pkgs; [`
 
 	GOMAINCONTENTS string = `package main
 
@@ -85,5 +67,10 @@ func main() {
 }`
 
 	ENVRCCONTENT string = "use flake"
-)
 
+	FLAKECONTENT_END string = `          ];
+        };
+      }
+  );
+}`
+)

@@ -6,7 +6,9 @@ import (
 	"os/exec"
 )
 
-func writeFlake(path string, language int) {
+func writeFlake(path string, language int, dependencies []string) {
+	depString := parseDependencies(dependencies)
+
 	flakeName := "flake.nix"
 	flake, err := os.Create(path + flakeName)
 	if err != nil {
@@ -16,11 +18,13 @@ func writeFlake(path string, language int) {
 
 	switch language {
 	case C:
-		_writeCFlake(flake)
+		depAll := combineDeps(depString, CFLAKECONTENT)
+		_writeCFlake(flake, depAll)
 	case CPP:
 		_writeCppFlake(flake)
 	case GO:
-		_writeGoFlake(flake)
+		depAll := combineDeps(depString, GOFLAKECONTENT)
+		_writeGoFlake(flake, depAll)
 	case JAVA:
 		_writeJavaFlake(flake)
 	}
@@ -97,8 +101,8 @@ func writeEnvrc(path string) {
 
 // WRITE FLAKE FILES
 
-func _writeCFlake(flake *os.File) {
-	_, err := flake.WriteString(CFLAKECONTENT)
+func _writeCFlake(flake *os.File, contents string) {
+	_, err := flake.WriteString(contents)
 	if err != nil {
 		panic(err)
 	}
@@ -112,8 +116,8 @@ func _writeCppFlake(flake *os.File) {
 	}
 }
 
-func _writeGoFlake(flake *os.File) {
-	_, err := flake.WriteString(GOFLAKECONTENT)
+func _writeGoFlake(flake *os.File, contents string) {
+	_, err := flake.WriteString(contents)
 	if err != nil {
 		panic(err)
 	}
@@ -274,4 +278,17 @@ func _allowDirenv(path string) {
 		panic(err)
 	}
 	fmt.Println(sty.success.Render("Allowed direnv"))
+}
+
+func parseDependencies(dep []string) string {
+	var depen string
+	for _, elem := range dep {
+		depen += "\t\t\t\t" + elem + "\n"
+	}
+
+	return depen
+}
+
+func combineDeps(dep string, flake string) string {
+	return fmt.Sprintf("%s\n%s%s", flake, dep, FLAKECONTENT_END)
 }
