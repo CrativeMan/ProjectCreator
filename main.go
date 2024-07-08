@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 
 	"github.com/charmbracelet/huh"
 	lip "github.com/charmbracelet/lipgloss"
@@ -48,23 +47,16 @@ func main() {
 	fmt.Printf("Creating project at: %s\n", path)
 	path = _makeGlobalPath(path)
 
-	_writeFiles(path, ENVRC)
-	_allowDirenv(err)
-
 	switch language {
 	case C:
-		createCEnv(path)
+		projType := cProjectType()
+		createCEnv(path, projType)
 	case CPP:
-		// Run createCppEnv
 		fmt.Println(sty.success.Render("C++"))
 	case GO:
-		err := createGoEnv(path)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create go env:"))
-			log.Fatal(err)
-		}
+		projType := goProjectType()
+		createGoEnv(path, projType)
 	case JAVA:
-		// Run createJavaEnv
 		fmt.Println(sty.success.Render("Java"))
 	default:
 		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
@@ -97,22 +89,41 @@ func promptUserWithChoices() *huh.Form {
 	)
 }
 
-func createCEnv(path string) {
-	askUserForProjectType(C)
-	_writeFiles(path, C)
-}
+func createCEnv(path string, projType int) {
+	writeMain(path, C)
+	writeRunFile(path, C)
 
-func createGoEnv(path string) error {
-	// ask for module name
-	GoModuleName = askUserForGoModuleName()
-	_writeFiles(path, GO)
 	_chmodFile(path, "run")
-	createGoModule(path)
-	return nil
+	_chmodFile(path, "build")
+
+	switch projType {
+	case NORM:
+		writeEnvrc(path)
+		_allowDirenv(path)
+
+		writeFlake(path, C)
+	case RAYLIB:
+		writeEnvrc(path)
+		_allowDirenv(path)
+	case SUB:
+	}
 }
 
-func askUserForProjectType(language int) int{
-	
+func createGoEnv(path string, projType int) {
+	GoModuleName = askUserForGoModuleName()
+	writeRunFile(path, GO)
+
+	_chmodFile(path, "run")
+	_chmodFile(path, "build")
+
+	switch projType {
+	case NORM:
+		writeFlake(path, GO)
+		writeGoMod(path)
+	case RAYLIB:
+	case SUB:
+		writeGoMod(path)
+	}
 }
 
 func askUserForGoModuleName() string {
@@ -137,176 +148,6 @@ func askUserForGoModuleName() string {
 	}
 
 	return moduleName
-}
-
-func _writeFiles(path string, langType int) {
-	flakeName := "flake.nix"
-
-	switch langType {
-	case C:
-		cMainName := "main.c"
-		flake, err := os.Create(path + flakeName)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
-			log.Fatal(err)
-		}
-		defer flake.Close()
-		mainC, err := os.Create(path + cMainName)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create main.c file:"))
-			log.Fatal(err)
-		}
-		defer mainC.Close()
-
-		_, err = flake.WriteString(CFLAKECONTENT)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write c flake:"))
-			log.Fatal(err)
-		}
-		_, err = mainC.WriteString(CMAINCONTENTS)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write c main:"))
-			log.Fatal(err)
-		}
-		err = mainC.Sync()
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync c main:"))
-			log.Fatal(err)
-		}
-		fmt.Println(sty.success.Render("Created main.c file"))
-
-		// close flake file buffer
-		err = flake.Sync()
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync go flake:"))
-			log.Fatal(err)
-		}
-		fmt.Println(sty.success.Render("Created flake.nix file"))
-	case CPP:
-		break
-	case GO:
-		goMainName := "main.go"
-		goRunFile := "run"
-		flake, err := os.Create(path + flakeName)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create flake.nix file:"))
-			log.Fatal(err)
-		}
-		defer flake.Close()
-		mainGo, err := os.Create(path + goMainName)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create main.go file:"))
-			log.Fatal(err)
-		}
-		goRun, err := os.Create(path + goRunFile)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create run file:"))
-			log.Fatal(err)
-		}
-		defer mainGo.Close()
-		defer goRun.Close()
-
-		_, err = flake.WriteString(GOFLAKECONTENT)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write go flake:"))
-			log.Fatal(err)
-		}
-		_, err = mainGo.WriteString(GOMAINCONTENTS)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write go main:"))
-			log.Fatal(err)
-		}
-		_, err = goRun.WriteString("go build -o main -v\n./main")
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write run file:"))
-			log.Fatal(err)
-		}
-		err = mainGo.Sync()
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync go main:"))
-			log.Fatal(err)
-		}
-		err = goRun.Sync()
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync run file:"))
-		}
-
-		// close flake file buffer
-		err = flake.Sync()
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync go flake:"))
-			log.Fatal(err)
-		}
-		fmt.Println(sty.success.Render("Created flake.nix file"))
-	case JAVA:
-		break
-	case ENVRC:
-		filename := ".envrc"
-		file, err := os.Create(path + filename)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to create .envrc:"))
-			log.Fatal(err)
-		}
-		defer file.Close()
-		_, err = file.WriteString(ENVRCCONTENT)
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to write .envrc:"))
-			log.Fatal(err)
-		}
-		err = file.Sync()
-		if err != nil {
-			fmt.Println(sty.fail.Render("Failed to sync .envrc:"))
-			log.Fatal(err)
-		}
-		fmt.Println(sty.success.Render("Created .envrc file"))
-	}
-}
-
-func createGoModule(path string) {
-	// create go.mod file
-	goModName := "go.mod"
-	goMod, err := os.Create(path + goModName)
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to create go.mod file:"))
-		log.Fatal(err)
-	}
-	defer goMod.Close()
-
-	_, err = goMod.WriteString(fmt.Sprintf("module %s\n\ngo 1.22.2", GoModuleName))
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to write go.mod:"))
-		log.Fatal(err)
-	}
-	err = goMod.Sync()
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to sync go.mod:"))
-		log.Fatal(err)
-	}
-
-	fmt.Println(sty.success.Render("Created go.mod file"))
-}
-
-func _allowDirenv(err error) {
-	dir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = os.Chdir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cmd := exec.Command("direnv", "allow")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = os.Chdir(dir)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(sty.success.Render("Allowed direnv for " + path))
 }
 
 func _isValidPath(path string) error {
