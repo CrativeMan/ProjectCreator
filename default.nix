@@ -8,7 +8,7 @@ buildGoModule rec {
   pname = "createp";
   version = "0.1.9";
 
-  src = ./.;
+  src = ./src/.;
 
   vendorSha256 = "sha256-i2FG/Dlw0r5PVHak+37VBeRwG7Vf7qWNlYzNyJUIURg=";
 
