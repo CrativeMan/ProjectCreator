@@ -196,7 +196,7 @@ func _writeCRun(path string) {
 	defer goBuild.Close()
 	defer goRun.Close()
 
-	_, err = goBuild.WriteString("gcc -o main -v")
+	_, err = goBuild.WriteString("gcc main.c -o main")
 	if err != nil {
 		panic(err)
 	}
