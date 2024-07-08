@@ -49,13 +49,11 @@ func main() {
 
 	switch language {
 	case C:
-		projType := cProjectType()
-		createCEnv(path, projType)
+		createCEnv(path)
 	case CPP:
 		fmt.Println(sty.success.Render("C++"))
 	case GO:
-		projType := goProjectType()
-		createGoEnv(path, projType)
+		createGoEnv(path)
 	case JAVA:
 		fmt.Println(sty.success.Render("Java"))
 	default:
@@ -89,7 +87,8 @@ func promptUserWithChoices() *huh.Form {
 	)
 }
 
-func createCEnv(path string, projType int) {
+func createCEnv(path string) {
+	projType := cProjectType()
 	writeMain(path, C)
 	writeRunFile(path, C)
 
@@ -109,7 +108,8 @@ func createCEnv(path string, projType int) {
 	}
 }
 
-func createGoEnv(path string, projType int) {
+func createGoEnv(path string) {
+	projType := goProjectType()
 	GoModuleName = askUserForGoModuleName()
 	writeRunFile(path, GO)
 
