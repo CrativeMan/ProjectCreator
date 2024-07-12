@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	lip "github.com/charmbracelet/lipgloss"
+	"github.com/pkg/sftp"
 )
 
 const (
@@ -18,11 +19,13 @@ const (
 )
 
 var (
-	language     int
-	path         string
-	sty          styles
-	Hostname     string
-	GoModuleName string
+	language       int
+	path           string
+	sty            styles
+	Hostname       string
+	GoModuleName   string
+	GetFilesLocaly bool = false
+	SFTPCLIENT     *sftp.Client
 )
 
 type styles struct {
@@ -64,6 +67,8 @@ func main() {
 }
 
 func promptUserWithChoices() *huh.Form {
+	connectSFTPServer()
+	getAllRemoteFiles()
 	WIP := sty.warning.Render(" (WIP)")
 	return huh.NewForm(
 		huh.NewGroup(
@@ -255,4 +260,15 @@ func _chmodFile(path string, filename string) {
 	}
 
 	fmt.Println(sty.success.Render("Made " + filename + " executable"))
+}
+
+func connectSFTPServer() {
+	client, err := createSFTPConnectionClient()
+	if err != nil {
+		fmt.Println(sty.warning.Render(fmt.Sprintf("Failed to connect to sftp server: %v", err)))
+		GetFilesLocaly = true
+	}
+
+	GetFilesLocaly = false
+	SFTPCLIENT = client
 }

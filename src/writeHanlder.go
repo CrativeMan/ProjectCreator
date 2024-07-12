@@ -102,10 +102,18 @@ func writeEnvrc(path string) {
 // WRITE FLAKE FILES
 
 func _writeCFlake(flake *os.File, contents string) {
-	_, err := flake.WriteString(contents)
+	if GetFilesLocaly {
+		_, err := flake.WriteString(contents)
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
+	Sflake, err := SFTPCLIENT.Open("")
 	if err != nil {
 		panic(err)
 	}
+	defer Sflake.Close()
 }
 
 // TODO: change this
