@@ -48,7 +48,6 @@ func createSFTPConnectionClient() (*sftp.Client, error) {
 
 	conn, err := ssh.Dial("tcp", sftpServer, config)
 	if err != nil {
-		fmt.Println("Failed to connect to server, getting files locally.")
 		return nil, NewSFTPError(0, "Failed to connect to sftpserver, get files localy")
 	}
 	defer conn.Close()
