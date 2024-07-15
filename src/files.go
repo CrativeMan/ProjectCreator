@@ -1,7 +1,7 @@
 package main
 
 const (
-	CFLAKECONTENT string = `{
+	FLAKECONTENT_START string = `{
 description = "A very basic flake";
 
 inputs = {

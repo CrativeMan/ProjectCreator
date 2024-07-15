@@ -2,8 +2,18 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"log"
 	"os"
 	"os/exec"
+)
+
+const (
+	FLAKE_START = "/flake_start"
+	FLAKE_END   = "/flake_end"
+	C_MAIN      = "/c_main"
+	GO_MAIN     = "/go_main"
+	ENVRC_MAIN  = "/envrc_content"
 )
 
 func writeFlake(path string, language int, dependencies []string) {
@@ -16,17 +26,46 @@ func writeFlake(path string, language int, dependencies []string) {
 	}
 	defer flake.Close()
 
-	switch language {
-	case C:
-		depAll := combineDeps(depString, CFLAKECONTENT)
-		_writeCFlake(flake, depAll)
-	case CPP:
-		_writeCppFlake(flake)
-	case GO:
-		depAll := combineDeps(depString, GOFLAKECONTENT)
-		_writeGoFlake(flake, depAll)
-	case JAVA:
-		_writeJavaFlake(flake)
+	if GetFilesLocaly {
+		depAll := combineDeps(depString, FLAKECONTENT_START, FLAKECONTENT_END)
+
+		switch language {
+		case C:
+			_writeCFlake(flake, depAll)
+		case GO:
+			_writeGoFlake(flake, depAll)
+		}
+	} else {
+		flakeStart, err := SFTPCLIENT.Open(SFTPPATH + FLAKE_START)
+		if err != nil {
+			log.Fatalf("Failed to open flakestart: %v", err)
+		}
+		defer flakeStart.Close()
+
+		flakeEnd, err := SFTPCLIENT.Open(SFTPPATH + FLAKE_END)
+		if err != nil {
+			log.Fatalf("Failed to open flakeend: %v", err)
+		}
+		defer flakeEnd.Close()
+
+		flakeStartContents, err := io.ReadAll(flakeStart)
+		if err != nil {
+			log.Fatalf("Failed to read flakestart: %v", err)
+		}
+
+		flakeEndContents, err := io.ReadAll(flakeEnd)
+		if err != nil {
+			log.Fatalf("Failed to read flakestart: %v", err)
+		}
+
+		depAll := combineDeps(depString, string(flakeStartContents), string(flakeEndContents))
+
+		switch language {
+		case C:
+			_readCFlake(flake, depAll)
+		case GO:
+			_readGoFlake(flake, depAll)
+		}
 	}
 
 	err = flake.Sync()
@@ -37,18 +76,28 @@ func writeFlake(path string, language int, dependencies []string) {
 }
 
 func writeMain(path string, language int) {
-	switch language {
-	case C:
-		_writeCMain(path)
-	case CPP:
-		_writeCppMain(path)
-	case GO:
-		_writeGoMain(path)
-	case JAVA:
-		_writeJavaMain(path)
+	if GetFilesLocaly {
+		switch language {
+		case C:
+			_writeCMain(path)
+		case CPP:
+			_writeCppMain(path)
+		case GO:
+			_writeGoMain(path)
+		case JAVA:
+			_writeJavaMain(path)
+		}
+	} else {
+		switch language {
+		case C:
+			_readCMain(path)
+		case GO:
+			_readGoMain(path)
+		}
 	}
 }
 
+// TODO: adapt this to network
 func writeRunFile(path string, language int) {
 	switch language {
 	case C:
@@ -58,6 +107,7 @@ func writeRunFile(path string, language int) {
 	}
 }
 
+// TODO: adapt this to network
 func writeGoMod(path string) {
 	goModName := "go.mod"
 	goMod, err := os.Create(path + goModName)
@@ -78,6 +128,7 @@ func writeGoMod(path string) {
 	fmt.Println(sty.success.Render("Created go.mod file"))
 }
 
+// TODO: adapt this to network
 func writeEnvrc(path string) {
 	filename := ".envrc"
 	envrc, err := os.Create(path + filename)
@@ -116,14 +167,6 @@ func _writeCFlake(flake *os.File, contents string) {
 	defer Sflake.Close()
 }
 
-// TODO: change this
-func _writeCppFlake(flake *os.File) {
-	_, err := flake.WriteString(CFLAKECONTENT)
-	if err != nil {
-		panic(err)
-	}
-}
-
 func _writeGoFlake(flake *os.File, contents string) {
 	_, err := flake.WriteString(contents)
 	if err != nil {
@@ -131,9 +174,16 @@ func _writeGoFlake(flake *os.File, contents string) {
 	}
 }
 
-// TODO: change this
-func _writeJavaFlake(flake *os.File) {
-	_, err := flake.WriteString(CFLAKECONTENT)
+// READ FLAKE FILS
+func _readCFlake(flake *os.File, deps string) {
+	_, err := flake.WriteString(deps)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func _readGoFlake(flake *os.File, deps string) {
+	_, err := flake.WriteString(deps)
 	if err != nil {
 		panic(err)
 	}
@@ -189,6 +239,49 @@ func _writeGoMain(path string) {
 
 func _writeJavaMain(path string) {
 	fmt.Println(path)
+}
+
+// READ MAIN FILES
+// TODO: clean up
+
+func _readCMain(path string) {
+	name := "main.c"
+	main, err := os.Create(path + name)
+	if err != nil {
+		panic(err)
+	}
+	defer main.Close()
+
+	file, err := SFTPCLIENT.Open(SFTPPATH + C_MAIN)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	_, err = main.ReadFrom(file)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func _readGoMain(path string) {
+	name := "main.go"
+	main, err := os.Create(path + name)
+	if err != nil {
+		panic(err)
+	}
+	defer main.Close()
+
+	file, err := SFTPCLIENT.Open(SFTPPATH + GO_MAIN)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	_, err = main.ReadFrom(file)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // WRITE RUN FILES
@@ -297,6 +390,6 @@ func parseDependencies(dep []string) string {
 	return depen
 }
 
-func combineDeps(dep string, flake string) string {
-	return fmt.Sprintf("%s\n%s%s", flake, dep, FLAKECONTENT_END)
+func combineDeps(dep string, flake string, end string) string {
+	return fmt.Sprintf("%s\n%s%s", flake, dep, end)
 }

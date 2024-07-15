@@ -7,8 +7,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	lip "github.com/charmbracelet/lipgloss"
-	"github.com/joho/godotenv"
 	"github.com/pkg/sftp"
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -17,6 +17,7 @@ const (
 	GO    = 2
 	JAVA  = 3
 	ENVRC = 4
+	CLOSE = 9
 )
 
 var (
@@ -27,9 +28,11 @@ var (
 	GoModuleName   string
 	GetFilesLocaly bool = false
 	SFTPCLIENT     *sftp.Client
+	SSHCLIENT      *ssh.Client
 	SFTPUSER       string
 	SFTPPSWD       string
 	SFTPIP         string
+	SFTPPATH       string
 )
 
 type styles struct {
@@ -44,34 +47,54 @@ func main() {
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
 	fmt.Println("Version 0.1.10")
-	connectSFTPServer()
 
-	initialForm := promptUserWithChoices()
+	// try to connect to server to get files from it
+	SSHCLIENT, SFTPCLIENT = connectSFTPServer()
+	if SFTPCLIENT == nil {
+		GetFilesLocaly = true
+		fmt.Println("Getting fils locally")
+	}
+
+	initialForm := prompUserWithLanguage()
 	err := initialForm.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to run init form: %v\n", err)
 	}
 
-	fmt.Printf("Creating project at: %s\n", path)
-	path = _makeGlobalPath(path)
+	if language != CLOSE {
+		pathForm := promptUserWithPath()
+		err = pathForm.Run()
+		if err != nil {
+			log.Fatalf("Failed to get path from user: %v\n", err)
+		}
 
-	switch language {
-	case C:
-		createCEnv(path)
-	case CPP:
-		fmt.Println(sty.success.Render("C++"))
-	case GO:
-		createGoEnv(path)
-	case JAVA:
-		fmt.Println(sty.success.Render("Java"))
-	default:
-		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+		fmt.Printf("Creating project at: %s\n", path)
+		path = _makeGlobalPath(path)
+
+		switch language {
+		case C:
+			createCEnv(path)
+		case CPP:
+			fmt.Println(sty.success.Render("C++"))
+		case GO:
+			createGoEnv(path)
+		case JAVA:
+			fmt.Println(sty.success.Render("Java"))
+		case CLOSE:
+			break
+		default:
+			log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+		}
+
+		fmt.Println(sty.success.Render("Successfully created project"))
 	}
 
-	fmt.Println(sty.success.Render("Successfully created project"))
+	if !GetFilesLocaly { // if server is not connected dont try this
+		closeServer()
+	}
 }
 
-func promptUserWithChoices() *huh.Form {
+func prompUserWithLanguage() *huh.Form {
 	WIP := sty.warning.Render(" (WIP)")
 	return huh.NewForm(
 		huh.NewGroup(
@@ -82,9 +105,16 @@ func promptUserWithChoices() *huh.Form {
 					huh.NewOption("C++"+WIP, CPP),
 					huh.NewOption("Go", GO),
 					huh.NewOption("Java"+WIP, JAVA),
+					huh.NewOption("Exit", CLOSE),
 				).
 				Value(&language),
+		).WithTheme(huh.ThemeDracula()),
+	)
+}
 
+func promptUserWithPath() *huh.Form {
+	return huh.NewForm(
+		huh.NewGroup(
 			huh.NewInput().
 				Title("Enter path to project").
 				Prompt("Path: ").
@@ -207,13 +237,15 @@ func askUserForGoModuleName() string {
 }
 
 func _isValidPath(path string) error {
-	path = _makeGlobalPath(path)
+	if language != CLOSE {
+		path = _makeGlobalPath(path)
 
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			err2 := _createFolder(path)
-			if err2 != nil {
-				return err2
+		if _, err := os.Stat(path); err != nil {
+			if os.IsNotExist(err) {
+				err2 := _createFolder(path)
+				if err2 != nil {
+					return err2
+				}
 			}
 		}
 	}
@@ -263,17 +295,4 @@ func _chmodFile(path string, filename string) {
 	}
 
 	fmt.Println(sty.success.Render("Made " + filename + " executable"))
-}
-
-func connectSFTPServer() {
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
-	SFTPUSER = os.Getenv("SFTP_USER")
-	SFTPPSWD = os.Getenv("SFTP_PASSWORD")
-	SFTPIP = os.Getenv("SFTP_IP")
-
-	SFTPCLIENT = initSFTPClient()
 }
