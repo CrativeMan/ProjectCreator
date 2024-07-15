@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	lip "github.com/charmbracelet/lipgloss"
+	"github.com/joho/godotenv"
 	"github.com/pkg/sftp"
 )
 
@@ -26,6 +27,9 @@ var (
 	GoModuleName   string
 	GetFilesLocaly bool = false
 	SFTPCLIENT     *sftp.Client
+	SFTPUSER       string
+	SFTPPSWD       string
+	SFTPIP         string
 )
 
 type styles struct {
@@ -40,6 +44,7 @@ func main() {
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
 	fmt.Println("Version 0.1.10")
+	connectSFTPServer()
 
 	initialForm := promptUserWithChoices()
 	err := initialForm.Run()
@@ -67,8 +72,6 @@ func main() {
 }
 
 func promptUserWithChoices() *huh.Form {
-	connectSFTPServer()
-	getAllRemoteFiles()
 	WIP := sty.warning.Render(" (WIP)")
 	return huh.NewForm(
 		huh.NewGroup(
@@ -263,12 +266,14 @@ func _chmodFile(path string, filename string) {
 }
 
 func connectSFTPServer() {
-	client, err := createSFTPConnectionClient()
+	err := godotenv.Load("../.env")
 	if err != nil {
-		fmt.Println(sty.warning.Render(fmt.Sprintf("Failed to connect to sftp server: %v", err)))
-		GetFilesLocaly = true
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	GetFilesLocaly = false
-	SFTPCLIENT = client
+	SFTPUSER = os.Getenv("SFTP_USER")
+	SFTPPSWD = os.Getenv("SFTP_PASSWORD")
+	SFTPIP = os.Getenv("SFTP_IP")
+
+	SFTPCLIENT = initSFTPClient()
 }
