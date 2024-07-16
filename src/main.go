@@ -46,7 +46,7 @@ func main() {
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
-	fmt.Println("Version 0.1.10")
+	fmt.Println("Version 0.1.11")
 
 	// try to connect to server to get files from it
 	SSHCLIENT, SFTPCLIENT = connectSFTPServer()

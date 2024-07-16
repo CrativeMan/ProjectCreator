@@ -27,7 +27,7 @@ func NewSFTPError(code int, message string) error {
 }
 
 func connectSFTPServer() (*ssh.Client, *sftp.Client) {
-	err := godotenv.Load("../.env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
@@ -45,49 +45,31 @@ func connectSFTPServer() (*ssh.Client, *sftp.Client) {
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // TODO: fix this insecure
 	}
 
+	var client *sftp.Client
 	conn, err := ssh.Dial("tcp", SFTPIP, config)
 	if err != nil {
-		log.Printf("%v\n", NewSFTPError(0, sty.warning.Render(fmt.Sprintf("Connection failure. Failed to connect to ssh server."))))
-	}
-
-	client, err := sftp.NewClient(conn)
-	if err != nil {
-		log.Printf("%v\n", NewSFTPError(0, sty.warning.Render(fmt.Sprintf("Client failure. Failed to create sftp client."))))
-		return nil, nil
+		log.Printf("%v\n", NewSFTPError(0, sty.warning.Render("Connection failure. Failed to connect to ssh server.")))
+	} else {
+		client, err = sftp.NewClient(conn)
+		if err != nil {
+			log.Printf("%v\n", NewSFTPError(0, sty.warning.Render("Client failure. Failed to create sftp client.")))
+			return nil, nil
+		}
 	}
 
 	return conn, client
-}
-
-func getFileFromServer(tar string, end string) {
-	remFile, err := SFTPCLIENT.Open(tar)
-	if err != nil {
-		panic(err)
-	}
-	defer remFile.Close()
-
-	locFile, err := os.Create(end)
-	if err != nil {
-		panic(err)
-	}
-	defer locFile.Close()
-
-	_, err = locFile.ReadFrom(remFile)
-	if err != nil {
-		panic(err)
-	}
 }
 
 func closeServer() {
 	err := SFTPCLIENT.Close()
 	if err != nil {
 		fmt.Println(err)
-		fmt.Printf("%v\n", NewSFTPError(-2, fmt.Sprintf("Failed to close sftp client")))
+		fmt.Printf("%v\n", NewSFTPError(-2, "Failed to close sftp client"))
 	}
 	err = SSHCLIENT.Close()
 	if err != nil {
 		fmt.Println(err)
-		fmt.Printf("%v\n", NewSFTPError(-1, fmt.Sprintf("Failed to close ssh client")))
+		fmt.Printf("%v\n", NewSFTPError(-1, "Failed to close ssh client"))
 	}
 
 	fmt.Println(sty.success.Render("Successfully closed connection to server"))

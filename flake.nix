@@ -21,26 +21,11 @@
     in {
       packages.default = pkgs.buildGoModule rec {
         pname = "createp";
-        version = "0.1.10";
+        version = "0.1.11";
 
-        src = ./src/.;
+        src = ./src;
 
-        vendorHash = "sha256-i2FG/Dlw0r5PVHak+37VBeRwG7Vf7qWNlYzNyJUIURg=";
-
-        subPackages = [ "." ];
-
-        buildPhase  = ''
-          runHook preBuild  
-          go build -o createp
-          runHook postBuild
-        '';
-
-        installPhase = ''
-          runHook preInstall
-          mkdir -p $out/bin
-          cp createp $out/bin
-          runHook postInstall
-          '';
+        vendorHash = "sha256-FcztgJAxge1uQLUZwOHOW+vPsfI67wtt9lDFwZaP4wU=";
       };
 
       devShell = pkgs.mkShell {
