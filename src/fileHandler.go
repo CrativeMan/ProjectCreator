@@ -11,9 +11,13 @@ import (
 const (
 	FLAKE_START = "/flake_start"
 	FLAKE_END   = "/flake_end"
-	C_MAIN      = "/c_main"
-	GO_MAIN     = "/go_main"
+	C_          = "/c_"
+	GO_         = "/go_"
 	ENVRC_MAIN  = "/envrc_content"
+
+	MAIN  = "main"
+	BUILD = "build"
+	RUN   = "run"
 )
 
 func writeFlake(path string, language int, dependencies []string) {
@@ -97,13 +101,21 @@ func writeMain(path string, language int) {
 	}
 }
 
-// TODO: adapt this to network
 func writeRunFile(path string, language int) {
-	switch language {
-	case C:
-		_writeCRun(path)
-	case GO:
-		_writeGoRun(path)
+	if GetFilesLocaly {
+		switch language {
+		case C:
+			_writeCRun(path)
+		case GO:
+			_writeGoRun(path)
+		}
+	} else {
+		switch language {
+		case C:
+			_readCRun(path)
+		case GO:
+			_readGoRun(path)
+		}
 	}
 }
 
@@ -153,18 +165,10 @@ func writeEnvrc(path string) {
 // WRITE FLAKE FILES
 
 func _writeCFlake(flake *os.File, contents string) {
-	if GetFilesLocaly {
-		_, err := flake.WriteString(contents)
-		if err != nil {
-			panic(err)
-		}
-		return
-	}
-	Sflake, err := SFTPCLIENT.Open("")
+	_, err := flake.WriteString(contents)
 	if err != nil {
 		panic(err)
 	}
-	defer Sflake.Close()
 }
 
 func _writeGoFlake(flake *os.File, contents string) {
@@ -175,6 +179,8 @@ func _writeGoFlake(flake *os.File, contents string) {
 }
 
 // READ FLAKE FILS
+// TODO: clean up
+
 func _readCFlake(flake *os.File, deps string) {
 	_, err := flake.WriteString(deps)
 	if err != nil {
@@ -252,7 +258,7 @@ func _readCMain(path string) {
 	}
 	defer main.Close()
 
-	file, err := SFTPCLIENT.Open(SFTPPATH + C_MAIN)
+	file, err := SFTPCLIENT.Open(SFTPPATH + C_ + MAIN)
 	if err != nil {
 		panic(err)
 	}
@@ -272,7 +278,7 @@ func _readGoMain(path string) {
 	}
 	defer main.Close()
 
-	file, err := SFTPCLIENT.Open(SFTPPATH + GO_MAIN)
+	file, err := SFTPCLIENT.Open(SFTPPATH + GO_ + MAIN)
 	if err != nil {
 		panic(err)
 	}
@@ -287,34 +293,34 @@ func _readGoMain(path string) {
 // WRITE RUN FILES
 
 func _writeCRun(path string) {
-	goBuildName := "build"
-	goRunName := "run"
+	cBuildName := "build"
+	cRunName := "run"
 
-	goBuild, err := os.Create(path + goBuildName)
+	cBuild, err := os.Create(path + cBuildName)
 	if err != nil {
 		panic(err)
 	}
-	goRun, err := os.Create(path + goRunName)
+	cRun, err := os.Create(path + cRunName)
 	if err != nil {
 		panic(err)
 	}
-	defer goBuild.Close()
-	defer goRun.Close()
+	defer cBuild.Close()
+	defer cRun.Close()
 
-	_, err = goBuild.WriteString("gcc main.c -o main")
+	_, err = cBuild.WriteString("gcc main.c -o main")
 	if err != nil {
 		panic(err)
 	}
-	_, err = goRun.WriteString("./build\n./main")
+	_, err = cRun.WriteString("./build\n./main")
 	if err != nil {
 		panic(err)
 	}
 
-	err = goBuild.Sync()
+	err = cBuild.Sync()
 	if err != nil {
 		panic(err)
 	}
-	err = goRun.Sync()
+	err = cRun.Sync()
 	if err != nil {
 		panic(err)
 	}
@@ -357,6 +363,77 @@ func _writeGoRun(path string) {
 
 	fmt.Println(sty.success.Render("Created build and run file"))
 }
+
+// READ RUN FILES
+// TODO: clean up
+
+func _readCRun(path string) {
+	build, err := os.Create(path + "build")
+	if err != nil {
+		panic(err)
+	}
+	run, err := os.Create(path + "run")
+	if err != nil {
+		panic(err)
+	}
+	defer build.Close()
+	defer run.Close()
+
+	rb, err := SFTPCLIENT.Open(SFTPPATH + C_ + BUILD)
+	if err != nil {
+		panic(err)
+	}
+	rr, err := SFTPCLIENT.Open(SFTPPATH + C_ + RUN)
+	if err != nil {
+		panic(err)
+	}
+	defer rb.Close()
+	defer rr.Close()
+
+	_, err = build.ReadFrom(rb)
+	if err != nil {
+		panic(err)
+	}
+	_, err = run.ReadFrom(rr)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func _readGoRun(path string) {
+	build, err := os.Create(path + "build")
+	if err != nil {
+		panic(err)
+	}
+	run, err := os.Create(path + "run")
+	if err != nil {
+		panic(err)
+	}
+	defer build.Close()
+	defer run.Close()
+
+	rb, err := SFTPCLIENT.Open(SFTPPATH + GO_ + BUILD)
+	if err != nil {
+		panic(err)
+	}
+	rr, err := SFTPCLIENT.Open(SFTPPATH + GO_ + RUN)
+	if err != nil {
+		panic(err)
+	}
+	defer rb.Close()
+	defer rr.Close()
+
+	_, err = build.ReadFrom(rb)
+	if err != nil {
+		panic(err)
+	}
+	_, err = run.ReadFrom(rr)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// ASD
 
 func _allowDirenv(path string) {
 	dir, err := os.Getwd()
