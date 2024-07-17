@@ -140,7 +140,6 @@ func writeGoMod(path string) {
 	fmt.Println(sty.success.Render("Created go.mod file"))
 }
 
-// TODO: adapt this to network
 func writeEnvrc(path string) {
 	filename := ".envrc"
 	envrc, err := os.Create(path + filename)
