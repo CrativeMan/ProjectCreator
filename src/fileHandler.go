@@ -149,9 +149,22 @@ func writeEnvrc(path string) {
 	}
 	defer envrc.Close()
 
-	_, err = envrc.WriteString(ENVRCCONTENT)
-	if err != nil {
-		panic(err)
+	if GetFilesLocaly {
+		_, err = envrc.WriteString(ENVRCCONTENT)
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		remEnv, err := SFTPCLIENT.Open(SFTPPATH + ENVRC_MAIN)
+		if err != nil {
+			panic(err)
+		}
+		defer remEnv.Close()
+
+		_, err = envrc.ReadFrom(remEnv)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	err = envrc.Sync()
