@@ -2,3 +2,5 @@ result
 .env
 vendor/
 main
+.fleet
+.idea
