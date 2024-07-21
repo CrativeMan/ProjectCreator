@@ -88,10 +88,8 @@ func createCEnv(path string) {
 	// ask for project type
 	projType := cProjectType()
 
-	// run files
+	// make file
 	writeRunFile(path, C)
-	_chmodFile(path, "run")
-	_chmodFile(path, "build")
 
 	// standard dependencies
 	dependencies := []string{

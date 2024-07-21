@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "createp: 0.2.1"
+var version = "createp: 0.3.0"
 
 const (
 	C     = 0
@@ -76,6 +76,37 @@ int main() {
 	printf("Hello, World!\n");
 	return 0;
 }`
+
+	CMAKECONTENTS string = `# Compiler
+CC = gcc
+
+# Compiler flags
+CFLAGS = -Wall -Wextra -g
+
+# Source files
+SRCS = main.c
+
+# Object files
+OBJS = $(SRCS:.c=.o)
+
+# Executable
+TARGET = main
+
+# Default target
+all: $(TARGET)
+
+# Compile source files into object files
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Link object files into executable
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+# Clean up object files and executable
+clean:
+	rm -f $(OBJS) $(TARGET)
+`
 
 	CPPMAINCONTENTS string = `#include <iostream>
 
