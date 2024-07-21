@@ -2,27 +2,11 @@ package main
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"os/exec"
 )
 
-const (
-	FLAKE_START = "/flake_start"
-	FLAKE_END   = "/flake_end"
-	C_          = "/c_"
-	GO_         = "/go_"
-	ENVRC_MAIN  = "/envrc_content"
-
-	MAIN  = "main"
-	BUILD = "build"
-	RUN   = "run"
-)
-
-func writeFlake(path string, language int, dependencies []string) {
-	depString := parseDependencies(dependencies)
-
+func writeFlake(path string, dependencies []string) {
 	flakeName := "flake.nix"
 	flake, err := os.Create(path + flakeName)
 	if err != nil {
@@ -30,46 +14,12 @@ func writeFlake(path string, language int, dependencies []string) {
 	}
 	defer flake.Close()
 
-	if GetFilesLocaly {
-		depAll := combineDeps(depString, FLAKECONTENT_START, FLAKECONTENT_END)
+	depAll := parseDependencies(dependencies)
+	contents := fmt.Sprintf(FLAKECONTENT, depAll)
 
-		switch language {
-		case C:
-			_writeCFlake(flake, depAll)
-		case GO:
-			_writeGoFlake(flake, depAll)
-		}
-	} else {
-		flakeStart, err := SFTPCLIENT.Open(SFTPPATH + FLAKE_START)
-		if err != nil {
-			log.Fatalf("Failed to open flakestart: %v", err)
-		}
-		defer flakeStart.Close()
-
-		flakeEnd, err := SFTPCLIENT.Open(SFTPPATH + FLAKE_END)
-		if err != nil {
-			log.Fatalf("Failed to open flakeend: %v", err)
-		}
-		defer flakeEnd.Close()
-
-		flakeStartContents, err := io.ReadAll(flakeStart)
-		if err != nil {
-			log.Fatalf("Failed to read flakestart: %v", err)
-		}
-
-		flakeEndContents, err := io.ReadAll(flakeEnd)
-		if err != nil {
-			log.Fatalf("Failed to read flakestart: %v", err)
-		}
-
-		depAll := combineDeps(depString, string(flakeStartContents), string(flakeEndContents))
-
-		switch language {
-		case C:
-			_readCFlake(flake, depAll)
-		case GO:
-			_readGoFlake(flake, depAll)
-		}
+	_, err = flake.WriteString(contents)
+	if err != nil {
+		panic(err)
 	}
 
 	err = flake.Sync()
@@ -80,46 +30,28 @@ func writeFlake(path string, language int, dependencies []string) {
 }
 
 func writeMain(path string, language int) {
-	if GetFilesLocaly {
-		switch language {
-		case C:
-			_writeCMain(path)
-		case CPP:
-			_writeCppMain(path)
-		case GO:
-			_writeGoMain(path)
-		case JAVA:
-			_writeJavaMain(path)
-		}
-	} else {
-		switch language {
-		case C:
-			_readCMain(path)
-		case GO:
-			_readGoMain(path)
-		}
+	switch language {
+	case C:
+		_writeCMain(path)
+	case CPP:
+		_writeCppMain(path)
+	case GO:
+		_writeGoMain(path)
+	case JAVA:
+		_writeJavaMain(path)
 	}
 }
 
+// TODO: convert to Makefile
 func writeRunFile(path string, language int) {
-	if GetFilesLocaly {
-		switch language {
-		case C:
-			_writeCRun(path)
-		case GO:
-			_writeGoRun(path)
-		}
-	} else {
-		switch language {
-		case C:
-			_readCRun(path)
-		case GO:
-			_readGoRun(path)
-		}
+	switch language {
+	case C:
+		_writeCRun(path)
+	case GO:
+		_writeGoRun(path)
 	}
 }
 
-// TODO: adapt this to network
 func writeGoMod(path string) {
 	goModName := "go.mod"
 	goMod, err := os.Create(path + goModName)
@@ -132,6 +64,7 @@ func writeGoMod(path string) {
 	if err != nil {
 		panic(err)
 	}
+
 	err = goMod.Sync()
 	if err != nil {
 		panic(err)
@@ -148,22 +81,9 @@ func writeEnvrc(path string) {
 	}
 	defer envrc.Close()
 
-	if GetFilesLocaly {
-		_, err = envrc.WriteString(ENVRCCONTENT)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		remEnv, err := SFTPCLIENT.Open(SFTPPATH + ENVRC_MAIN)
-		if err != nil {
-			panic(err)
-		}
-		defer remEnv.Close()
-
-		_, err = envrc.ReadFrom(remEnv)
-		if err != nil {
-			panic(err)
-		}
+	_, err = envrc.WriteString(ENVRCCONTENT)
+	if err != nil {
+		panic(err)
 	}
 
 	err = envrc.Sync()
@@ -172,39 +92,6 @@ func writeEnvrc(path string) {
 	}
 
 	fmt.Println(sty.success.Render("Created .envrc file"))
-}
-
-// WRITE FLAKE FILES
-
-func _writeCFlake(flake *os.File, contents string) {
-	_, err := flake.WriteString(contents)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func _writeGoFlake(flake *os.File, contents string) {
-	_, err := flake.WriteString(contents)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// READ FLAKE FILS
-// TODO: clean up
-
-func _readCFlake(flake *os.File, deps string) {
-	_, err := flake.WriteString(deps)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func _readGoFlake(flake *os.File, deps string) {
-	_, err := flake.WriteString(deps)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // WRITE MAIN FILES
@@ -257,49 +144,6 @@ func _writeGoMain(path string) {
 
 func _writeJavaMain(path string) {
 	fmt.Println(path)
-}
-
-// READ MAIN FILES
-// TODO: clean up
-
-func _readCMain(path string) {
-	name := "main.c"
-	main, err := os.Create(path + name)
-	if err != nil {
-		panic(err)
-	}
-	defer main.Close()
-
-	file, err := SFTPCLIENT.Open(SFTPPATH + C_ + MAIN)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	_, err = main.ReadFrom(file)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func _readGoMain(path string) {
-	name := "main.go"
-	main, err := os.Create(path + name)
-	if err != nil {
-		panic(err)
-	}
-	defer main.Close()
-
-	file, err := SFTPCLIENT.Open(SFTPPATH + GO_ + MAIN)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	_, err = main.ReadFrom(file)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // WRITE RUN FILES
@@ -376,76 +220,7 @@ func _writeGoRun(path string) {
 	fmt.Println(sty.success.Render("Created build and run file"))
 }
 
-// READ RUN FILES
-// TODO: clean up
-
-func _readCRun(path string) {
-	build, err := os.Create(path + "build")
-	if err != nil {
-		panic(err)
-	}
-	run, err := os.Create(path + "run")
-	if err != nil {
-		panic(err)
-	}
-	defer build.Close()
-	defer run.Close()
-
-	rb, err := SFTPCLIENT.Open(SFTPPATH + C_ + BUILD)
-	if err != nil {
-		panic(err)
-	}
-	rr, err := SFTPCLIENT.Open(SFTPPATH + C_ + RUN)
-	if err != nil {
-		panic(err)
-	}
-	defer rb.Close()
-	defer rr.Close()
-
-	_, err = build.ReadFrom(rb)
-	if err != nil {
-		panic(err)
-	}
-	_, err = run.ReadFrom(rr)
-	if err != nil {
-		panic(err)
-	}
-}
-
-func _readGoRun(path string) {
-	build, err := os.Create(path + "build")
-	if err != nil {
-		panic(err)
-	}
-	run, err := os.Create(path + "run")
-	if err != nil {
-		panic(err)
-	}
-	defer build.Close()
-	defer run.Close()
-
-	rb, err := SFTPCLIENT.Open(SFTPPATH + GO_ + BUILD)
-	if err != nil {
-		panic(err)
-	}
-	rr, err := SFTPCLIENT.Open(SFTPPATH + GO_ + RUN)
-	if err != nil {
-		panic(err)
-	}
-	defer rb.Close()
-	defer rr.Close()
-
-	_, err = build.ReadFrom(rb)
-	if err != nil {
-		panic(err)
-	}
-	_, err = run.ReadFrom(rr)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// ASD
+// MISC STUFF
 
 func _allowDirenv(path string) {
 	dir, err := os.Getwd()
@@ -473,12 +248,8 @@ func _allowDirenv(path string) {
 func parseDependencies(dep []string) string {
 	var depen string
 	for _, elem := range dep {
-		depen += "\t\t\t\t" + elem + "\n"
+		depen += elem + "\n"
 	}
 
 	return depen
-}
-
-func combineDeps(dep string, flake string, end string) string {
-	return fmt.Sprintf("%s\n%s%s", flake, dep, end)
 }

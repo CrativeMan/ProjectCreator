@@ -1,59 +1,27 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/charmbracelet/huh"
 	lip "github.com/charmbracelet/lipgloss"
-	"github.com/pkg/sftp"
-	"golang.org/x/crypto/ssh"
 )
 
-const (
-	C     = 0
-	CPP   = 1
-	GO    = 2
-	JAVA  = 3
-	ENVRC = 4
-	CLOSE = 9
-)
+func parseArgs() Args {
+	var args Args
+	flag.BoolVar(&args.Help, "h", false, "show help")
+	flag.BoolVar(&args.Version, "v", false, "show version")
+	flag.BoolVar(&args.Flake, "f", true, "generate flake")
 
-var (
-	language       int
-	path           string
-	sty            styles
-	Hostname       string
-	GoModuleName   string
-	GetFilesLocaly bool = false
-	SFTPCLIENT     *sftp.Client
-	SSHCLIENT      *ssh.Client
-	SFTPUSER       string
-	SFTPPSWD       string
-	SFTPIP         string
-	SFTPPATH       string
-)
+	flag.Parse()
 
-type styles struct {
-	success lip.Style
-	fail    lip.Style
-	warning lip.Style
+	return args
 }
 
 func main() {
-	sty.success = lip.NewStyle().Bold(true).Foreground(lip.Color("86"))
-	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
-	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
-
-	fmt.Println("Version 0.1.11")
-
-	// try to connect to server to get files from it
-	SSHCLIENT, SFTPCLIENT = connectSFTPServer()
-	if SFTPCLIENT == nil {
-		GetFilesLocaly = true
-		fmt.Println("Getting fils locally")
-	}
+	initial()
 
 	initialForm := prompUserWithLanguage()
 	err := initialForm.Run()
@@ -88,73 +56,60 @@ func main() {
 
 		fmt.Println(sty.success.Render("Successfully created project"))
 	}
+}
 
-	if !GetFilesLocaly { // if server is not connected dont try this
-		closeServer()
+func initial() {
+	sty.success = lip.NewStyle().Bold(true).Foreground(lip.Color("86"))
+	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
+	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
+
+	arguments := parseArgs()
+
+	if arguments.Version {
+		fmt.Println(sty.success.Render(version))
+	}
+
+	if arguments.Help {
+		// TODO: implement this
+		fmt.Println("Run createp to create a new project")
 	}
 }
 
-func prompUserWithLanguage() *huh.Form {
-	WIP := sty.warning.Render(" (WIP)")
-	return huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[int]().
-				Title("Choose programming language: ").
-				Options(
-					huh.NewOption("C", C),
-					huh.NewOption("C++"+WIP, CPP),
-					huh.NewOption("Go", GO),
-					huh.NewOption("Java"+WIP, JAVA),
-					huh.NewOption("Exit", CLOSE),
-				).
-				Value(&language),
-		).WithTheme(huh.ThemeDracula()),
-	)
-}
-
-func promptUserWithPath() *huh.Form {
-	return huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Enter path to project").
-				Prompt("Path: ").
-				Placeholder("If left empty it's this path.").
-				Validate(_isValidPath).
-				Value(&path),
-		).WithTheme(huh.ThemeDracula()),
-	)
-}
-
 func createCEnv(path string) {
+	// ask for project type
 	projType := cProjectType()
-	writeRunFile(path, C)
 
+	// run files
+	writeRunFile(path, C)
 	_chmodFile(path, "run")
 	_chmodFile(path, "build")
 
+	// standard dependencies
+	dependencies := []string{
+		"clang-tools",
+		"llvmPackages.clangUseLLVM",
+		"gcc",
+		"clang",
+		"cmake",
+	}
+
 	switch projType {
 	case NORM:
-		dependencies := []string{
-			"clang-tools",
-			"llvmPackages.clangUseLLVM",
-			"gcc",
-		}
+		// direnv
 		writeEnvrc(path)
 		_allowDirenv(path)
 
-		writeFlake(path, C, dependencies)
+		writeFlake(path, dependencies)
+
 		writeMain(path, C)
 	case RAYLIB:
-		dependencies := []string{
-			"clang-tools",
-			"llvmPackages.clangUseLLVM",
-			"gcc",
-			"raylib",
-		}
 		writeEnvrc(path)
 		_allowDirenv(path)
 
-		writeFlake(path, C, dependencies)
+		// extra dependencies
+		dependencies = append(dependencies, "raylib")
+		writeFlake(path, dependencies)
+
 		writeMain(path, C)
 	case SUB:
 		writeMain(path, C)
@@ -169,71 +124,46 @@ func createGoEnv(path string) {
 	_chmodFile(path, "run")
 	_chmodFile(path, "build")
 
+	dependencies := []string{
+		"go",
+		"gofumpt",
+		"goimports-reviser",
+		"golines",
+		"delve",
+	}
+
 	switch projType {
 	case NORM:
-		dependencies := []string{
-			"go",
-			"gofumpt",
-			"goimports-reviser",
-			"golines",
-			"delve",
-		}
+
 		writeEnvrc(path)
 		_allowDirenv(path)
-		writeFlake(path, GO, dependencies)
+		writeFlake(path, dependencies)
 		writeGoMod(path)
 		writeMain(path, GO)
 	case RAYLIB:
-		dependencies := []string{
-			"go",
-			"gofumpt",
-			"goimports-reviser",
-			"golines",
-			"delve",
-			"wayland",
-			"wayland-protocols",
-			"glew",
-			"glfw",
-			"libxkbcommon",
-			"xorg.libX11",
-			"xorg.libXcursor",
-			"xorg.libXi",
-			"xorg.libXrandr",
-			"xorg.libXineram",
-		}
 		writeEnvrc(path)
 		_allowDirenv(path)
-		writeFlake(path, GO, dependencies)
+
+		dependencies = append(dependencies, "wayland")
+		dependencies = append(dependencies, "wayland-protocols")
+		dependencies = append(dependencies, "glew")
+		dependencies = append(dependencies, "glfw")
+		dependencies = append(dependencies, "libxkbcommon")
+		dependencies = append(dependencies, "xorg.libX11")
+		dependencies = append(dependencies, "xorg.libXcursor")
+		dependencies = append(dependencies, "xorg.libXi")
+		dependencies = append(dependencies, "xorg.libXrandr")
+		dependencies = append(dependencies, "xorg.libXineram")
+
+		writeFlake(path, dependencies)
+
 		writeGoMod(path)
+
 		writeMain(path, GO)
 	case SUB:
 		writeGoMod(path)
 		writeMain(path, GO)
 	}
-}
-
-func askUserForGoModuleName() string {
-	var moduleName string
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Module name:").
-				Placeholder("If left empty its main").
-				Value(&moduleName).
-				CharLimit(20),
-		).WithTheme(huh.ThemeDracula()),
-	)
-	err := form.Run()
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to run ask user for go module name:"))
-		log.Fatal(err)
-	}
-
-	if moduleName == "" {
-		moduleName = "main"
-	}
-
-	return moduleName
 }
 
 func _isValidPath(path string) error {

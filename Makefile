@@ -1,4 +1,4 @@
-.PHONY: run build clean
+.PHONY: run build clean clean-all
 
 GOCMD=go
 GOBUILD=$(GOCMD) build
@@ -14,4 +14,9 @@ build:
 
 clean:
 	$(ROOT) &&	rm -f src/$(BINARY_NAME)
+	$(ROOT) && rm -rf test
+	$(ROOT) && rm -rf asd
+
+clean-all:
+	make clean
 	$(ROOT) &&	rm -rf result
