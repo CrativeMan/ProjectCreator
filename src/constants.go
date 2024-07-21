@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "createp: 0.2.0"
+var version = "createp: 0.2.1"
 
 const (
 	C     = 0

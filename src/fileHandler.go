@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 )
@@ -39,6 +40,8 @@ func writeMain(path string, language int) {
 		_writeGoMain(path)
 	case JAVA:
 		_writeJavaMain(path)
+	default:
+		log.Fatalf("Unknown language detected")
 	}
 }
 
@@ -51,6 +54,8 @@ func writeRunFile(path string, language int) {
 		_writeCppRun(path)
 	case GO:
 		_writeGoRun(path)
+	default:
+		log.Fatalf("Unknown language detected")
 	}
 }
 

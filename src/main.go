@@ -21,44 +21,49 @@ func parseArgs() Args {
 }
 
 func main() {
-	initial()
+	exit := initial()
 
-	initialForm := prompUserWithLanguage()
-	err := initialForm.Run()
-	if err != nil {
-		log.Fatalf("Failed to run init form: %v\n", err)
-	}
-
-	if language != CLOSE {
-		pathForm := promptUserWithPath()
-		err = pathForm.Run()
+	if !exit {
+		initialForm := prompUserWithLanguage()
+		err := initialForm.Run()
 		if err != nil {
-			log.Fatalf("Failed to get path from user: %v\n", err)
+			log.Fatalf("Failed to run init form: %v\n", err)
 		}
 
-		fmt.Printf("Creating project at: %s\n", path)
-		path = _makeGlobalPath(path)
+		if language != CLOSE {
+			pathForm := promptUserWithPath()
+			err = pathForm.Run()
+			if err != nil {
+				log.Fatalf("Failed to get path from user: %v\n", err)
+			}
 
-		switch language {
-		case C:
-			createCEnv(path)
-		case CPP:
-			createCppEnv(path)
-		case GO:
-			createGoEnv(path)
-		case JAVA:
-			fmt.Println(sty.success.Render("Java"))
-		case CLOSE:
-			break
-		default:
-			log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+			fmt.Printf("Creating project at: %s\n", path)
+			path = _makeGlobalPath(path)
+
+			switch language {
+			case C:
+				createCEnv(path)
+			case CPP:
+				createCppEnv(path)
+			case GO:
+				createGoEnv(path)
+			case JAVA:
+				fmt.Println(sty.success.Render("Java"))
+			case CLOSE:
+				break
+			default:
+				log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+			}
+
+			fmt.Println(sty.success.Render("Successfully created project"))
 		}
-
-		fmt.Println(sty.success.Render("Successfully created project"))
 	}
+
 }
 
-func initial() {
+func initial() bool {
+	var exit bool
+
 	sty.success = lip.NewStyle().Bold(true).Foreground(lip.Color("86"))
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
@@ -66,13 +71,17 @@ func initial() {
 	arguments := parseArgs()
 
 	if arguments.Version {
-		fmt.Println(sty.success.Render(version))
+		fmt.Println(version)
+		exit = true
 	}
 
 	if arguments.Help {
 		// TODO: implement this
 		fmt.Println("Run createp to create a new project")
+		exit = true
 	}
+
+	return exit
 }
 
 func createCEnv(path string) {
@@ -113,6 +122,8 @@ func createCEnv(path string) {
 		writeMain(path, C)
 	case SUB:
 		writeMain(path, C)
+	default:
+		log.Fatalf("Unknown project type detected")
 	}
 }
 
@@ -145,6 +156,8 @@ func createCppEnv(path string) {
 		writeMain(path, CPP)
 	case SUB:
 		writeMain(path, CPP)
+	default:
+		log.Fatalf("Unknown project type detected")
 	}
 }
 
@@ -195,6 +208,8 @@ func createGoEnv(path string) {
 	case SUB:
 		writeGoMod(path)
 		writeMain(path, GO)
+	default:
+		log.Fatalf("Unknown project type detected")
 	}
 }
 
