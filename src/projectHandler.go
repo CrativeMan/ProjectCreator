@@ -23,7 +23,7 @@ func prompUserWithLanguage() *huh.Form {
 				Title("Choose programming language: ").
 				Options(
 					huh.NewOption("C", C),
-					huh.NewOption("C++"+WIP, CPP),
+					huh.NewOption("C++", CPP),
 					huh.NewOption("Go", GO),
 					huh.NewOption("Java"+WIP, JAVA),
 					huh.NewOption("Exit", CLOSE),
@@ -89,6 +89,31 @@ func cProjTypeForm() *huh.Form {
 				Options(
 					huh.NewOption("Normal", NORM),
 					huh.NewOption("Raylib", RAYLIB),
+					huh.NewOption("SubProject", SUB),
+				).
+				Value(&projType),
+		).WithTheme(huh.ThemeDracula()),
+	)
+}
+
+// CPP project
+func cppProjectType() int {
+	cForm := cppProjTypeForm()
+	err := cForm.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	return projType
+}
+
+func cppProjTypeForm() *huh.Form {
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[int]().
+				Title("Select Project Type").
+				Options(
+					huh.NewOption("Normal", NORM),
 					huh.NewOption("SubProject", SUB),
 				).
 				Value(&projType),

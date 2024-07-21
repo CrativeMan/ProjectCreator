@@ -47,6 +47,8 @@ func writeRunFile(path string, language int) {
 	switch language {
 	case C:
 		_writeCRun(path)
+	case CPP:
+		_writeCppRun(path)
 	case GO:
 		_writeGoRun(path)
 	}
@@ -118,7 +120,24 @@ func _writeCMain(path string) {
 }
 
 func _writeCppMain(path string) {
-	fmt.Println(path)
+	name := "main.cpp"
+	main, err := os.Create(path + name)
+	if err != nil {
+		panic(err)
+	}
+	defer main.Close()
+
+	_, err = main.WriteString(CPPMAINCONTENTS)
+	if err != nil {
+		panic(err)
+	}
+
+	err = main.Sync()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(sty.success.Render("Creatd main.cpp file"))
 }
 
 func _writeGoMain(path string) {
@@ -164,6 +183,42 @@ func _writeCRun(path string) {
 	defer cRun.Close()
 
 	_, err = cBuild.WriteString("gcc main.c -o main")
+	if err != nil {
+		panic(err)
+	}
+	_, err = cRun.WriteString("./build\n./main")
+	if err != nil {
+		panic(err)
+	}
+
+	err = cBuild.Sync()
+	if err != nil {
+		panic(err)
+	}
+	err = cRun.Sync()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(sty.success.Render("Created build and run file"))
+}
+
+func _writeCppRun(path string) {
+	cBuildName := "build"
+	cRunName := "run"
+
+	cBuild, err := os.Create(path + cBuildName)
+	if err != nil {
+		panic(err)
+	}
+	cRun, err := os.Create(path + cRunName)
+	if err != nil {
+		panic(err)
+	}
+	defer cBuild.Close()
+	defer cRun.Close()
+
+	_, err = cBuild.WriteString("g++ main.cpp -o main")
 	if err != nil {
 		panic(err)
 	}

@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "createp: 0.1.12"
+var version = "createp: 0.2.0"
 
 const (
 	C     = 0
@@ -75,6 +75,13 @@ const (
 int main() {
 	printf("Hello, World!\n");
 	return 0;
+}`
+
+	CPPMAINCONTENTS string = `#include <iostream>
+
+int main() {
+    std::cout << "Hello, World!\n";
+    return 0;
 }`
 
 	GOMAINCONTENTS string = `package main

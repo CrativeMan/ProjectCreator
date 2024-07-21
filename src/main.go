@@ -43,7 +43,7 @@ func main() {
 		case C:
 			createCEnv(path)
 		case CPP:
-			fmt.Println(sty.success.Render("C++"))
+			createCppEnv(path)
 		case GO:
 			createGoEnv(path)
 		case JAVA:
@@ -113,6 +113,38 @@ func createCEnv(path string) {
 		writeMain(path, C)
 	case SUB:
 		writeMain(path, C)
+	}
+}
+
+func createCppEnv(path string) {
+	// ask for project type
+	projType := cppProjectType()
+
+	// run files
+	writeRunFile(path, CPP)
+	_chmodFile(path, "run")
+	_chmodFile(path, "build")
+
+	// standard dependencies
+	dependencies := []string{
+		"clang-tools",
+		"llvmPackages.clangUseLLVM",
+		"gcc",
+		"clang",
+		"cmake",
+	}
+
+	switch projType {
+	case NORM:
+		// direnv
+		writeEnvrc(path)
+		_allowDirenv(path)
+
+		writeFlake(path, dependencies)
+
+		writeMain(path, CPP)
+	case SUB:
+		writeMain(path, CPP)
 	}
 }
 
