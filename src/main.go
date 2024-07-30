@@ -13,7 +13,7 @@ func parseArgs() Args {
 	var args Args
 	flag.BoolVar(&args.Help, "h", false, "show help")
 	flag.BoolVar(&args.Version, "v", false, "show version")
-	flag.BoolVar(&args.Flake, "f", true, "generate flake")
+	flag.BoolVar(&args.Flake, "nf", false, "dont generate a flake.nix file")
 
 	flag.Parse()
 
@@ -81,6 +81,11 @@ func initial() bool {
 		exit = true
 	}
 
+	if arguments.Flake {
+		GenerateFlake = false
+		fmt.Println("Not generating a flake.nix file")
+	}
+
 	return exit
 }
 
@@ -131,8 +136,6 @@ func createCppEnv(path string) {
 
 	// run files
 	writeRunFile(path, CPP)
-	_chmodFile(path, "run")
-	_chmodFile(path, "build")
 
 	// standard dependencies
 	dependencies := []string{

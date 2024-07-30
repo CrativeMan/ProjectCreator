@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "createp: 0.3.2"
+var version = "createp: 0.3.3"
 
 const (
 	C     = 0
@@ -14,17 +14,19 @@ const (
 )
 
 var (
-	language     int
-	path         string
-	sty          styles
-	Hostname     string
-	GoModuleName string
+	language      int
+	path          string
+	sty           styles
+	Hostname      string
+	GoModuleName  string
+	GenerateFlake bool = true
 )
 
 type Args struct {
 	Help    bool
 	Version bool
 	Flake   bool
+	GoToDir bool
 }
 
 type styles struct {
@@ -86,6 +88,24 @@ TARGET = main
 all: $(TARGET)
 
 %.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) $^ -o $@
+
+clean:
+	rm -f $(OBJS) $(TARGET)
+`
+
+	CPPMAKECONTENTS string = `CC = g++
+CFLAGS = -Wall -Wextra -g
+SRCS = main.cpp
+OBJS = $(SRCS:.c=.o)
+TARGET = main
+
+all: $(TARGET)
+
+%.o: %.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS)
