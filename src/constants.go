@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "createp: 0.3.3"
+var version = "1.0.0"
 
 const (
 	C     = 0
@@ -34,6 +34,22 @@ type styles struct {
 	fail    lip.Style
 	warning lip.Style
 }
+
+var helpText = `-------------------------------------
+  ____                _             
+ / ___|_ __ ___  __ _| |_ ___ _ __  
+| |   | '__/ _ \/ _' | __/ _ \ '_ \ 
+| |___| | |  __/ (_| | ||  __/ |_) |
+ \____|_|  \___|\__,_|\__\___| .__/ 
+                             |_|    
+-------------------------------------
+A simple project creator.
+Version: %s
+Command line flags: 
+	- h: show this help text
+	- v: show version
+	- nf: dont generate a flake.nix file
+-------------------------------------`
 
 // =============================
 // FILES

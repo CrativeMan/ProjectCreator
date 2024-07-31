@@ -16,7 +16,7 @@ const (
 )
 
 func prompUserWithLanguage() *huh.Form {
-	WIP := sty.warning.Render(" (WIP)")
+	// WIP := sty.warning.Render(" (WIP)")
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[int]().
@@ -25,7 +25,7 @@ func prompUserWithLanguage() *huh.Form {
 					huh.NewOption("C", C),
 					huh.NewOption("C++", CPP),
 					huh.NewOption("Go", GO),
-					huh.NewOption("Java"+WIP, JAVA),
+					// huh.NewOption("Java"+WIP, JAVA),
 					huh.NewOption("Exit", CLOSE),
 				).
 				Value(&language),

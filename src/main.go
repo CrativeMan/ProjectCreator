@@ -71,13 +71,12 @@ func initial() bool {
 	arguments := parseArgs()
 
 	if arguments.Version {
-		fmt.Println(version)
+		fmt.Printf("createp: %s\n", version)
 		exit = true
 	}
 
 	if arguments.Help {
-		// TODO: implement this
-		fmt.Println("Run createp to create a new project")
+		fmt.Printf(helpText, version)
 		exit = true
 	}
 
