@@ -44,6 +44,12 @@ pkgs.inputs.createp.packages.x86_64-linux.default
 - Choose between different project types
 - Simple fast and efficient
 
+## Command line flags
+
+- `-h` for showing a help
+- `-v` for showing the version
+- `-nf` for not generating a flake.nix file and using nix/flake dev envs.
+
 # Todo
 
 - [ ] Make the user change direcotrys after project creation
