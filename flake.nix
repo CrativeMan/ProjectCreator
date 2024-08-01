@@ -10,15 +10,26 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
   };
 
-  outputs = {
-    self,
-    flake-utils,
-    nixpkgs,
-    ...
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
+  outputs =
+    { self
+    , flake-utils
+    , nixpkgs
+    , ...
+    }:
+    flake-utils.lib.eachDefaultSystem (system:
+    let
       pkgs = nixpkgs.legacyPackages.${system};
-    in {
+    in
+    {
+      packages.default = pkgs.buildGoModule rec {
+        pname = "createp";
+        version = "1.0.0";
+
+        src = ./src;
+
+        vendorHash = "sha256-UnOebGoWD33c+1dNiXpbS0kSZWRCAsZcQnXFTXIZFpk=";
+      };
+
       devShell = pkgs.mkShell {
         buildInputs = with pkgs; [
           go

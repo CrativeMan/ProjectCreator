@@ -1,130 +1,163 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/charmbracelet/huh"
 	lip "github.com/charmbracelet/lipgloss"
-	"github.com/pkg/sftp"
 )
 
-const (
-	C     = 0
-	CPP   = 1
-	GO    = 2
-	JAVA  = 3
-	ENVRC = 4
-)
+func parseArgs() Args {
+	var args Args
+	flag.BoolVar(&args.Help, "h", false, "show help")
+	flag.BoolVar(&args.Version, "v", false, "show version")
+	flag.BoolVar(&args.Flake, "nf", false, "dont generate a flake.nix file")
 
-var (
-	language       int
-	path           string
-	sty            styles
-	Hostname       string
-	GoModuleName   string
-	GetFilesLocaly bool = false
-	SFTPCLIENT     *sftp.Client
-)
+	flag.Parse()
 
-type styles struct {
-	success lip.Style
-	fail    lip.Style
-	warning lip.Style
+	return args
 }
 
 func main() {
+	exit := initial()
+
+	if !exit {
+		initialForm := prompUserWithLanguage()
+		err := initialForm.Run()
+		if err != nil {
+			log.Fatalf("Failed to run init form: %v\n", err)
+		}
+
+		if language != CLOSE {
+			pathForm := promptUserWithPath()
+			err = pathForm.Run()
+			if err != nil {
+				log.Fatalf("Failed to get path from user: %v\n", err)
+			}
+
+			fmt.Printf("Creating project at: %s\n", path)
+			path = _makeGlobalPath(path)
+
+			switch language {
+			case C:
+				createCEnv(path)
+			case CPP:
+				createCppEnv(path)
+			case GO:
+				createGoEnv(path)
+			case JAVA:
+				fmt.Println(sty.success.Render("Java"))
+			case CLOSE:
+				break
+			default:
+				log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+			}
+
+			fmt.Println(sty.success.Render("Successfully created project"))
+		}
+	}
+
+}
+
+func initial() bool {
+	var exit bool
+
 	sty.success = lip.NewStyle().Bold(true).Foreground(lip.Color("86"))
 	sty.fail = lip.NewStyle().Bold(true).Foreground(lip.Color("9"))
 	sty.warning = lip.NewStyle().Bold(true).Foreground(lip.Color("#ffb300"))
 
-	fmt.Println("Version 0.1.10")
+	arguments := parseArgs()
 
-	initialForm := promptUserWithChoices()
-	err := initialForm.Run()
-	if err != nil {
-		log.Fatal(err)
+	if arguments.Version {
+		fmt.Printf("createp: %s\n", version)
+		exit = true
 	}
 
-	fmt.Printf("Creating project at: %s\n", path)
-	path = _makeGlobalPath(path)
-
-	switch language {
-	case C:
-		createCEnv(path)
-	case CPP:
-		fmt.Println(sty.success.Render("C++"))
-	case GO:
-		createGoEnv(path)
-	case JAVA:
-		fmt.Println(sty.success.Render("Java"))
-	default:
-		log.Fatal("Failed to create languageEnv.\nUnexpected language detected.")
+	if arguments.Help {
+		fmt.Printf(helpText, version)
+		exit = true
 	}
 
-	fmt.Println(sty.success.Render("Successfully created project"))
-}
+	if arguments.Flake {
+		GenerateFlake = false
+		fmt.Println("Not generating a flake.nix file")
+	}
 
-func promptUserWithChoices() *huh.Form {
-	connectSFTPServer()
-	getAllRemoteFiles()
-	WIP := sty.warning.Render(" (WIP)")
-	return huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[int]().
-				Title("Choose programming language: ").
-				Options(
-					huh.NewOption("C", C),
-					huh.NewOption("C++"+WIP, CPP),
-					huh.NewOption("Go", GO),
-					huh.NewOption("Java"+WIP, JAVA),
-				).
-				Value(&language),
-
-			huh.NewInput().
-				Title("Enter path to project").
-				Prompt("Path: ").
-				Placeholder("If left empty it's this path.").
-				Validate(_isValidPath).
-				Value(&path),
-		).WithTheme(huh.ThemeDracula()),
-	)
+	return exit
 }
 
 func createCEnv(path string) {
+	// ask for project type
 	projType := cProjectType()
+
+	// make file
 	writeRunFile(path, C)
 
-	_chmodFile(path, "run")
-	_chmodFile(path, "build")
+	// standard dependencies
+	dependencies := []string{
+		"clang-tools",
+		"llvmPackages.clangUseLLVM",
+		"gcc",
+		"clang",
+		"cmake",
+	}
 
 	switch projType {
 	case NORM:
-		dependencies := []string{
-			"clang-tools",
-			"llvmPackages.clangUseLLVM",
-			"gcc",
-		}
+		// direnv
 		writeEnvrc(path)
 		_allowDirenv(path)
 
-		writeFlake(path, C, dependencies)
+		writeFlake(path, dependencies)
+
 		writeMain(path, C)
 	case RAYLIB:
-		dependencies := []string{
-			"clang-tools",
-			"llvmPackages.clangUseLLVM",
-			"gcc",
-			"raylib",
-		}
 		writeEnvrc(path)
 		_allowDirenv(path)
 
-		writeFlake(path, C, dependencies)
+		// extra dependencies
+		dependencies = append(dependencies, "raylib")
+		writeFlake(path, dependencies)
+
 		writeMain(path, C)
 	case SUB:
 		writeMain(path, C)
+	default:
+		log.Fatalf("Unknown project type detected")
+	}
+}
+
+func createCppEnv(path string) {
+	// ask for project type
+	projType := cppProjectType()
+
+	// run files
+	writeRunFile(path, CPP)
+
+	// standard dependencies
+	dependencies := []string{
+		"clang-tools",
+		"llvmPackages.clangUseLLVM",
+		"gcc",
+		"clang",
+		"cmake",
+	}
+
+	switch projType {
+	case NORM:
+		// direnv
+		writeEnvrc(path)
+		_allowDirenv(path)
+
+		writeFlake(path, dependencies)
+
+		writeMain(path, CPP)
+	case SUB:
+		writeMain(path, CPP)
+	default:
+		log.Fatalf("Unknown project type detected")
 	}
 }
 
@@ -136,81 +169,60 @@ func createGoEnv(path string) {
 	_chmodFile(path, "run")
 	_chmodFile(path, "build")
 
+	dependencies := []string{
+		"go",
+		"gofumpt",
+		"goimports-reviser",
+		"golines",
+		"delve",
+	}
+
 	switch projType {
 	case NORM:
-		dependencies := []string{
-			"go",
-			"gofumpt",
-			"goimports-reviser",
-			"golines",
-			"delve",
-		}
+
 		writeEnvrc(path)
 		_allowDirenv(path)
-		writeFlake(path, GO, dependencies)
+		writeFlake(path, dependencies)
 		writeGoMod(path)
 		writeMain(path, GO)
 	case RAYLIB:
-		dependencies := []string{
-			"go",
-			"gofumpt",
-			"goimports-reviser",
-			"golines",
-			"delve",
-			"wayland",
-			"wayland-protocols",
-			"glew",
-			"glfw",
-			"libxkbcommon",
-			"xorg.libX11",
-			"xorg.libXcursor",
-			"xorg.libXi",
-			"xorg.libXrandr",
-			"xorg.libXineram",
-		}
 		writeEnvrc(path)
 		_allowDirenv(path)
-		writeFlake(path, GO, dependencies)
+
+		dependencies = append(dependencies, "wayland")
+		dependencies = append(dependencies, "wayland-protocols")
+		dependencies = append(dependencies, "glew")
+		dependencies = append(dependencies, "glfw")
+		dependencies = append(dependencies, "libxkbcommon")
+		dependencies = append(dependencies, "xorg.libX11")
+		dependencies = append(dependencies, "xorg.libXcursor")
+		dependencies = append(dependencies, "xorg.libXi")
+		dependencies = append(dependencies, "xorg.libXrandr")
+		dependencies = append(dependencies, "xorg.libXineram")
+
+		writeFlake(path, dependencies)
+
 		writeGoMod(path)
+
 		writeMain(path, GO)
 	case SUB:
 		writeGoMod(path)
 		writeMain(path, GO)
+	default:
+		log.Fatalf("Unknown project type detected")
 	}
-}
-
-func askUserForGoModuleName() string {
-	var moduleName string
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewInput().
-				Title("Module name:").
-				Placeholder("If left empty its main").
-				Value(&moduleName).
-				CharLimit(20),
-		).WithTheme(huh.ThemeDracula()),
-	)
-	err := form.Run()
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to run ask user for go module name:"))
-		log.Fatal(err)
-	}
-
-	if moduleName == "" {
-		moduleName = "main"
-	}
-
-	return moduleName
 }
 
 func _isValidPath(path string) error {
-	path = _makeGlobalPath(path)
+	if language != CLOSE {
+		path = _makeGlobalPath(path)
 
-	if _, err := os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			err2 := _createFolder(path)
-			if err2 != nil {
-				return err2
+		if _, err := os.Stat(path); err != nil {
+			if os.IsNotExist(err) {
+				err2 := _createFolder(path)
+				if err2 != nil {
+					return err2
+				}
 			}
 		}
 	}
@@ -260,15 +272,4 @@ func _chmodFile(path string, filename string) {
 	}
 
 	fmt.Println(sty.success.Render("Made " + filename + " executable"))
-}
-
-func connectSFTPServer() {
-	client, err := createSFTPConnectionClient()
-	if err != nil {
-		fmt.Println(sty.warning.Render(fmt.Sprintf("Failed to connect to sftp server: %v", err)))
-		GetFilesLocaly = true
-	}
-
-	GetFilesLocaly = false
-	SFTPCLIENT = client
 }

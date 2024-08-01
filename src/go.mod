@@ -1,4 +1,4 @@
-module project-creator
+module createp
 
 go 1.21
 
