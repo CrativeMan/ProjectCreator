@@ -5,9 +5,6 @@ go 1.21
 require (
 	github.com/charmbracelet/huh v0.4.2
 	github.com/charmbracelet/lipgloss v0.11.0
-	github.com/joho/godotenv v1.5.1
-	github.com/pkg/sftp v1.13.6
-	golang.org/x/crypto v0.25.0
 )
 
 require (
@@ -23,7 +20,6 @@ require (
 	github.com/charmbracelet/x/windows v0.1.2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/kr/fs v0.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
