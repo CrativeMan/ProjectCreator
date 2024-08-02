@@ -27,7 +27,7 @@
 
         src = ./src;
 
-        vendorHash = "sha256-UnOebGoWD33c+1dNiXpbS0kSZWRCAsZcQnXFTXIZFpk=";
+        vendorHash = "sha256-jiy29BPPP2dojTT16uRVRnN3Cs2ZIl2WDmEp4eIcr7A=";
       };
 
       devShell = pkgs.mkShell {
