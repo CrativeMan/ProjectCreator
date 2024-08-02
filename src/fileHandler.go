@@ -219,41 +219,26 @@ func _writeCppRun(path string) {
 	fmt.Println(sty.success.Render("Created make file"))
 }
 
-// TODO: convert to Makefile
 func _writeGoRun(path string) {
-	goBuildName := "build"
-	goRunName := "run"
+	makeName := "Makefile"
 
-	goBuild, err := os.Create(path + goBuildName)
+	make, err := os.Create(path + makeName)
 	if err != nil {
 		panic(err)
 	}
-	goRun, err := os.Create(path + goRunName)
-	if err != nil {
-		panic(err)
-	}
-	defer goBuild.Close()
-	defer goRun.Close()
+	defer make.Close()
 
-	_, err = goBuild.WriteString("go build -o main -v")
-	if err != nil {
-		panic(err)
-	}
-	_, err = goRun.WriteString("./build\n./main")
+	_, err = make.WriteString(GOMAKECONTENTS)
 	if err != nil {
 		panic(err)
 	}
 
-	err = goBuild.Sync()
-	if err != nil {
-		panic(err)
-	}
-	err = goRun.Sync()
+	err = make.Sync()
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(sty.success.Render("Created build and run file"))
+	fmt.Println(sty.success.Render("Created make file"))
 }
 
 // MISC STUFF

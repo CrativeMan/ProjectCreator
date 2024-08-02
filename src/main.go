@@ -166,9 +166,6 @@ func createGoEnv(path string) {
 	GoModuleName = askUserForGoModuleName()
 	writeRunFile(path, GO)
 
-	_chmodFile(path, "run")
-	_chmodFile(path, "build")
-
 	dependencies := []string{
 		"go",
 		"gofumpt",

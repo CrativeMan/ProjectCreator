@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "1.0.0"
+var version = "1.1.0"
 
 const (
 	C     = 0
@@ -90,7 +90,7 @@ const (
 
 	CMAINCONTENTS string = `#include <stdio.h>
 	
-int main() {
+int main(int argc, char **argv) {
 	printf("Hello, World!\n");
 	return 0;
 }`
@@ -129,6 +129,36 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
+`
+
+	GOMAKECONTENTS string = `GOCMD=go
+GOBUILD=$(GOCMD) build
+GOCLEAN=$(GOCMD) clean
+GOTEST=$(GOCMD) test
+GOMOD=$(GOCMD) mod
+BINARY_NAME=main
+
+all: build
+
+build: 
+	$(GOBUILD) -o $(BINARY_NAME)
+
+test: 
+	$(GOTEST) -v ./...
+
+clean: 
+	$(GOCLEAN)
+	rm -f $(BINARY_NAME)
+	rm -f $(BINARY_UNIX)
+
+run:
+	$(GOBUILD) -o $(BINARY_NAME)
+	./$(BINARY_NAME)
+
+mod:
+	$(GOMOD) tidy
+
+.PHONY: all build test clean run mod
 `
 
 	CPPMAINCONTENTS string = `#include <iostream>

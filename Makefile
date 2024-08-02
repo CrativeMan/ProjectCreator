@@ -1,22 +1,28 @@
-.PHONY: run build clean clean-all
-
 GOCMD=go
 GOBUILD=$(GOCMD) build
+GOCLEAN=$(GOCMD) clean
+GOTEST=$(GOCMD) test
+GOMOD=$(GOCMD) mod
 BINARY_NAME=createp
-ROOT=cd /home/crative/dev/go/project-creator-go
+
+all: build
+
+build: 
+	cd src && $(GOBUILD) -o $(BINARY_NAME)
+
+test: 
+	$(GOTEST) -v ./...
+
+clean: 
+	cd src && $(GOCLEAN)
+	cd src && rm -f $(BINARY_NAME)
+	cd src && rm -f $(BINARY_UNIX)
 
 run:
 	cd src && $(GOBUILD) -o $(BINARY_NAME)
 	./src/$(BINARY_NAME)
 
-build:
-	$(ROOT) && nix build
+mod:
+	$(GOMOD) tidy
 
-clean:
-	$(ROOT) &&	rm -f src/$(BINARY_NAME)
-	$(ROOT) && rm -rf test
-	$(ROOT) && rm -rf asd
-
-clean-all:
-	make clean
-	$(ROOT) &&	rm -rf result
+.PHONY: all build test clean run mod
