@@ -252,6 +252,7 @@ func _makeGlobalPath(path string) string {
 	return path
 }
 
+// TODO: remove this
 func _chmodFile(path string, filename string) {
 	fileInfo, err := os.Stat(path + filename)
 	if err != nil {

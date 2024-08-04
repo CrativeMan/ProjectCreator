@@ -3,6 +3,18 @@
 A project creator written in the [golang](https://go.dev/) using the [lipgloss](https://github.com/charmbracelet/lipgloss)
 cli framework. It is optimized for the nix/nixos flake workflow.
 
+# Features
+
+- Create C,Go,C++ programs
+- Choose between different project types
+- Simple fast and efficient
+
+## Command line flags
+
+- `-h` for showing a help
+- `-v` for showing the version
+- `-nf` for not generating a flake.nix file and using nix/flake dev envs.
+
 # How to install
 
 ## Manual install
@@ -35,20 +47,10 @@ createp = {
 and then install it like your other programs/inputs in your `configuration.nix` like this
 
 ```
-pkgs.inputs.createp.packages.x86_64-linux.default
+environment.systemPackages = [
+    pkgs.inputs.createp.packages.x86_64-linux.default
+];
 ```
-
-# Features
-
-- Create C,Go,C++ programs
-- Choose between different project types
-- Simple fast and efficient
-
-## Command line flags
-
-- `-h` for showing a help
-- `-v` for showing the version
-- `-nf` for not generating a flake.nix file and using nix/flake dev envs.
 
 # Todo
 
