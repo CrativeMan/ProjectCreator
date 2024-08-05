@@ -16,7 +16,6 @@ const (
 )
 
 func prompUserWithLanguage() *huh.Form {
-	// WIP := sty.warning.Render(" (WIP)")
 	return huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[int]().
@@ -43,7 +42,7 @@ func promptUserWithPath() *huh.Form {
 				Validate(_isValidPath).
 				Value(&path),
 		).WithTheme(huh.ThemeDracula()),
-	)
+	)	
 }
 
 func askUserForGoModuleName() string {

@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "1.1.0"
+var version = "1.1.1"
 
 const (
 	C     = 0
@@ -49,7 +49,8 @@ Command line flags:
 	- h: show this help text
 	- v: show version
 	- nf: dont generate a flake.nix file
--------------------------------------`
+-------------------------------------
+`
 
 // =============================
 // FILES

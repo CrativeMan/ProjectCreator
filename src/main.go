@@ -36,7 +36,12 @@ func main() {
 			if err != nil {
 				log.Fatalf("Failed to get path from user: %v\n", err)
 			}
-
+			if path == "" {
+				path, err = os.Getwd()
+				if err != nil {
+					panic(err)
+				}
+			}
 			fmt.Printf("Creating project at: %s\n", path)
 			path = _makeGlobalPath(path)
 
@@ -212,6 +217,11 @@ func createGoEnv(path string) {
 
 func _isValidPath(path string) error {
 	if language != CLOSE {
+		if path == "\n" || path == "" {
+			var err error
+			return err
+		}
+
 		path = _makeGlobalPath(path)
 
 		if _, err := os.Stat(path); err != nil {
@@ -250,24 +260,4 @@ func _makeGlobalPath(path string) string {
 		path = dir + path[1:]
 	}
 	return path
-}
-
-// TODO: remove this
-func _chmodFile(path string, filename string) {
-	fileInfo, err := os.Stat(path + filename)
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to get fileinfo from ", filename))
-		log.Fatal(err)
-	}
-
-	mode := fileInfo.Mode()
-	execMode := mode | 0100
-
-	err = os.Chmod(path+filename, execMode)
-	if err != nil {
-		fmt.Println(sty.fail.Render("Failed to make " + filename + " executable"))
-		log.Fatal(err)
-	}
-
-	fmt.Println(sty.success.Render("Made " + filename + " executable"))
 }
