@@ -23,7 +23,7 @@
     {
       packages.default = pkgs.buildGoModule rec {
         pname = "createp";
-        version = "1.1.1";
+        version = "1.2.0";
 
         src = ./src;
 

@@ -63,7 +63,6 @@ func main() {
 			fmt.Println(sty.success.Render("Successfully created project"))
 		}
 	}
-
 }
 
 func initial() bool {
@@ -208,6 +207,13 @@ func createGoEnv(path string) {
 
 		writeMain(path, GO)
 	case SUB:
+		writeGoMod(path)
+		writeMain(path, GO)
+	case COBRA:
+		writeEnvrc(path)
+		_allowDirenv(path)
+		dependencies = append(dependencies, "cobra-cli")
+		writeFlake(path, dependencies)
 		writeGoMod(path)
 		writeMain(path, GO)
 	default:

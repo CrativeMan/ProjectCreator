@@ -13,6 +13,7 @@ const (
 	NORM   = 0
 	RAYLIB = 1
 	SUB    = 2
+	COBRA  = 3
 )
 
 func prompUserWithLanguage() *huh.Form {
@@ -42,7 +43,7 @@ func promptUserWithPath() *huh.Form {
 				Validate(_isValidPath).
 				Value(&path),
 		).WithTheme(huh.ThemeDracula()),
-	)	
+	)
 }
 
 func askUserForGoModuleName() string {
@@ -139,6 +140,7 @@ func goProjTypeForm() *huh.Form {
 				Options(
 					huh.NewOption("Normal", NORM),
 					huh.NewOption("Raylib", RAYLIB),
+					huh.NewOption("Cobra", COBRA),
 					huh.NewOption("SubProject", SUB),
 				).
 				Value(&projType),
