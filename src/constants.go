@@ -2,7 +2,7 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "1.2.0"
+var version = "1.2.1"
 
 const (
 	C     = 0
@@ -97,18 +97,20 @@ int main(int argc, char **argv) {
 }`
 
 	CMAKECONTENTS string = `CC = gcc
-CFLAGS = -Wall -Wextra -g
-SRCS = main.c
-OBJS = $(SRCS:.c=.o)
+CFLAGS = -Wall -Wextra -pedantic -std=c99
+LDFLAGS = 
+SRCDIR = src
+SRCS = $(wildcard $(SRCDIR)/*.c)
+OBJS = $(patsubst $(SRCDIR)/%.c, %.o, $(SRCS))
 TARGET = main
 
 all: $(TARGET)
 
-%.o: %.c
+%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)

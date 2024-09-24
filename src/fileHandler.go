@@ -108,7 +108,10 @@ func writeEnvrc(path string) {
 
 func _writeCMain(path string) {
 	name := "main.c"
-	mainC, err := os.Create(path + name)
+	if err := os.Mkdir(path+"src", os.ModePerm); err != nil {
+		panic(err)
+	}
+	mainC, err := os.Create(path + "/src/" + name)
 	if err != nil {
 		panic(err)
 	}
