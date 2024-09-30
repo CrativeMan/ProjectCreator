@@ -2,15 +2,16 @@ package main
 
 import lip "github.com/charmbracelet/lipgloss"
 
-var version = "1.2.1"
+var version = "1.2.2"
 
 const (
-	C     = 0
-	CPP   = 1
-	GO    = 2
-	JAVA  = 3
-	ENVRC = 4
-	CLOSE = 9
+	C       = 0
+	CPP     = 1
+	GO      = 2
+	JAVA    = 3
+	ENVRC   = 4
+	NCURSES = 5
+	CLOSE   = 9
 )
 
 var (

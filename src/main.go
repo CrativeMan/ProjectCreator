@@ -110,9 +110,15 @@ func createCEnv(path string) {
 
 	switch projType {
 	case NORM:
+	case NCURSES:
 		// direnv
 		writeEnvrc(path)
 		_allowDirenv(path)
+
+		// extra dependencies
+		if projType == NCURSES {
+			dependencies = append(dependencies, "ncurses")
+		}
 
 		writeFlake(path, dependencies)
 
@@ -151,9 +157,15 @@ func createCppEnv(path string) {
 
 	switch projType {
 	case NORM:
+	case NCURSES:
 		// direnv
 		writeEnvrc(path)
 		_allowDirenv(path)
+
+		// extra dependencies
+		if projType == NCURSES {
+			dependencies = append(dependencies, "ncurses")
+		}
 
 		writeFlake(path, dependencies)
 

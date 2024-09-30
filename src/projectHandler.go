@@ -89,6 +89,7 @@ func cProjTypeForm() *huh.Form {
 				Options(
 					huh.NewOption("Normal", NORM),
 					huh.NewOption("Raylib", RAYLIB),
+					huh.NewOption("Ncurses", NCURSES),
 					huh.NewOption("SubProject", SUB),
 				).
 				Value(&projType),
