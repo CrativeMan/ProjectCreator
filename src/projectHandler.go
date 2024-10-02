@@ -9,13 +9,6 @@ import (
 
 var projType int = 0
 
-const (
-	NORM   = 0
-	RAYLIB = 1
-	SUB    = 2
-	COBRA  = 3
-)
-
 func prompUserWithLanguage() *huh.Form {
 	return huh.NewForm(
 		huh.NewGroup(
@@ -25,7 +18,7 @@ func prompUserWithLanguage() *huh.Form {
 					huh.NewOption("C", C),
 					huh.NewOption("C++", CPP),
 					huh.NewOption("Go", GO),
-					// huh.NewOption("Java"+WIP, JAVA),
+					huh.NewOption("Rust", RUST),
 					huh.NewOption("Exit", CLOSE),
 				).
 				Value(&language),

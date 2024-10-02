@@ -52,8 +52,8 @@ func main() {
 				createCppEnv(path)
 			case GO:
 				createGoEnv(path)
-			case JAVA:
-				fmt.Println(sty.success.Render("Java"))
+			case RUST:
+				createRustEnv(path)
 			case CLOSE:
 				break
 			default:
@@ -227,6 +227,31 @@ func createGoEnv(path string) {
 		dependencies = append(dependencies, "cobra-cli")
 		writeFlake(path, dependencies)
 		writeGoMod(path)
+		writeMain(path, GO)
+	default:
+		log.Fatalf("Unknown project type detected")
+	}
+}
+
+func createRustEnv(path string) {
+	projType := goProjectType()
+	GoModuleName = askUserForGoModuleName()
+	writeRunFile(path, GO)
+
+	dependencies := []string{
+		"cargo",
+		"rustc",
+		"rust-analyzer",
+		"rustfmt",
+		"clippy",
+		"bacon",
+	}
+
+	switch projType {
+	case NORM:
+		writeEnvrc(path)
+		_allowDirenv(path)
+		writeFlake(path, dependencies)
 		writeMain(path, GO)
 	default:
 		log.Fatalf("Unknown project type detected")

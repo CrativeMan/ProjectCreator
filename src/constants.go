@@ -5,13 +5,20 @@ import lip "github.com/charmbracelet/lipgloss"
 var version = "1.2.2"
 
 const (
-	C       = 0
-	CPP     = 1
-	GO      = 2
-	JAVA    = 3
-	ENVRC   = 4
-	NCURSES = 5
-	CLOSE   = 9
+	C     = 0
+	CPP   = 1
+	GO    = 2
+	RUST  = 3
+	ENVRC = 4
+	CLOSE = 9
+)
+
+const (
+	NORM    = 0
+	RAYLIB  = 1
+	SUB     = 2
+	COBRA   = 3
+	NCURSES = 4
 )
 
 var (
