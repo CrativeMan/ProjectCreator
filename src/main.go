@@ -110,16 +110,19 @@ func createCEnv(path string) {
 
 	switch projType {
 	case NORM:
+		// direnv
+		writeEnvrc(path)
+		_allowDirenv(path)
+
+		writeFlake(path, dependencies)
+
+		writeMain(path, C)
 	case NCURSES:
 		// direnv
 		writeEnvrc(path)
 		_allowDirenv(path)
 
-		// extra dependencies
-		if projType == NCURSES {
-			dependencies = append(dependencies, "ncurses")
-		}
-
+		dependencies = append(dependencies, "ncurses")
 		writeFlake(path, dependencies)
 
 		writeMain(path, C)
@@ -252,7 +255,7 @@ func createRustEnv(path string) {
 		writeEnvrc(path)
 		_allowDirenv(path)
 		writeFlake(path, dependencies)
-		writeMain(path, GO)
+		writeMain(path, RUST)
 	default:
 		log.Fatalf("Unknown project type detected")
 	}

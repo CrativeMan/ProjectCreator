@@ -40,8 +40,8 @@ func writeMain(path string, language int) {
 		_writeCppMain(path)
 	case GO:
 		_writeGoMain(path)
-	case JAVA:
-		_writeJavaMain(path)
+	case RUST:
+		_writeRustMain(path)
 	default:
 		log.Fatalf("Unknown language detected")
 	}
@@ -172,7 +172,7 @@ func _writeGoMain(path string) {
 	fmt.Println(sty.success.Render("Created main.go file"))
 }
 
-func _writeJavaMain(path string) {
+func _writeRustMain(path string) {
 	fmt.Println(path)
 }
 
